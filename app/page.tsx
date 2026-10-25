@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import NavbarTop from '@/components/NavbarTop';
 import BottomNav, { NavTab } from '@/components/BottomNav';
-import TripsTab from '@/components/tabs/TripsTab';
+import PassengerView from '@/components/PassengerView';
 import BookingsTab, { BookingWithTrip } from '@/components/tabs/BookingsTab';
 import ProfileTab from '@/components/tabs/ProfileTab';
 import NotificationsModal from '@/components/NotificationsModal';
@@ -28,9 +28,10 @@ const INITIAL_BOOKINGS: BookingWithTrip[] = [
       driverName: 'Alejandro Bastidas',
       driverPhone: '+584141234567',
       vehiclePlate: 'AB123CD',
+      vehicleModel: 'Toyota Corolla 2018',
       origin: 'Caracas',
       destination: 'Valencia',
-      departureTime: new Date(Date.now() + 4 * 3600 * 1000).toISOString(),
+      departureTime: new Date(Date.now() + 2 * 3600 * 1000).toISOString(),
       totalSeats: 4,
       availableSeats: 3,
       pricePerSeat: 15,
@@ -44,13 +45,12 @@ export default function Home() {
   const [bookings, setBookings] = useState<BookingWithTrip[]>(INITIAL_BOOKINGS);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
-  const handleBookTripSuccess = (booking: Booking, trip: Trip) => {
+  const handleBookingCreated = (booking: Booking, trip: Trip) => {
     const newEntry: BookingWithTrip = {
       booking,
       trip,
     };
     setBookings((prev) => [newEntry, ...prev]);
-    setCurrentTab('reservas');
   };
 
   const handleBookingStatusChanged = (bookingId: string, newStatus: Booking['status']) => {
@@ -65,15 +65,17 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#0B0F17] text-zinc-100">
-      {/* Minimalist Top Navigation Bar */}
+      {/* Barra de Navegación Superior Minimalista */}
       <NavbarTop onOpenNotifications={() => setIsNotificationsOpen(true)} />
 
-      {/* Main Container - Mobile-First centered container */}
-      <main className="mx-auto w-full max-w-md flex-1 px-4 pt-3 pb-safe">
+      {/* Contenedor Principal Mobile-First */}
+      <main className="mx-auto w-full max-w-md flex-1 px-4 pt-2 pb-safe">
+        {/* Vista Principal del Pasajero: Próximas Salidas y En Carretera */}
         {currentTab === 'viajes' && (
-          <TripsTab onBookTripSuccess={handleBookTripSuccess} />
+          <PassengerView onBookingCreated={handleBookingCreated} />
         )}
 
+        {/* Mis Reservas y Boletos */}
         {currentTab === 'reservas' && (
           <BookingsTab
             bookings={bookings}
@@ -82,17 +84,18 @@ export default function Home() {
           />
         )}
 
+        {/* Perfil del Usuario y Modo Conductor */}
         {currentTab === 'perfil' && <ProfileTab />}
       </main>
 
-      {/* Mobile-First Bottom Navigation Bar */}
+      {/* Barra de Navegación Inferior Móvil */}
       <BottomNav
         currentTab={currentTab}
         onTabChange={(tab) => setCurrentTab(tab)}
         activeBookingsCount={bookings.filter((b) => b.booking.status === 'confirmed').length}
       />
 
-      {/* Notifications Modal */}
+      {/* Modal de Notificaciones */}
       {isNotificationsOpen && (
         <NotificationsModal onClose={() => setIsNotificationsOpen(false)} />
       )}

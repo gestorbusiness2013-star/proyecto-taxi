@@ -152,7 +152,7 @@ export async function bookSeats({ tripId, passenger, seats }: BookSeatsInput): P
     }
     const trip = tripSnap.data() as Omit<Trip, 'id'>;
 
-    if (trip.status !== 'scheduled') {
+    if (trip.status !== 'scheduled' && trip.status !== 'in_route') {
       throw new DbError('TRIP_NOT_BOOKABLE', 'Este viaje ya no acepta reservas.');
     }
     if (trip.driverId === passenger.id) {

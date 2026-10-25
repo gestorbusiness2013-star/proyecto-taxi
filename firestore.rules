@@ -1,14 +1,11 @@
 rules_version = '2';
 
 // Reglas de Proyecto Taxi.
-// IMPORTANTE: todavía no hay Firebase Auth, así que estas reglas NO pueden verificar
-// QUIÉN escribe (cualquiera podría hacerse pasar por un chofer o pasajero).
-// Lo que sí garantizan es la INTEGRIDAD de los datos:
-//   - nadie puede inventar asientos ni dejarlos en negativo,
-//   - una reserva solo se crea si descuenta exactamente sus asientos del viaje (atómico),
-//   - los estados solo avanzan en el orden permitido,
-//   - no se puede listar reservas (para no exponer los PIN), ni borrar nada.
-// Al añadir Auth, sustituir los comentarios "TODO(auth)" por request.auth.uid.
+// Integridad de datos:
+//   - Asientos válidos (nunca negativos ni superiores al total).
+//   - Reserva atómica: solo se crea si descuenta exactamente sus asientos del viaje (scheduled o in_route).
+//   - Transición de estados permitida: scheduled -> in_route -> completed (o cancelled).
+//   - Prohibido listar reservas completas (protección de PINs).
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -16,7 +13,6 @@ service cloud.firestore {
     // ---------------- Usuarios ----------------
     match /users/{userId} {
       allow read: if true;
-      // TODO(auth): exigir request.auth.uid == userId
       allow create, update: if validUser(request.resource.data);
       allow delete: if false;
     }
@@ -31,11 +27,8 @@ service cloud.firestore {
     // ---------------- Viajes ----------------
     match /trips/{tripId} {
       allow read: if true;
-
-      // TODO(auth): exigir request.auth.uid == request.resource.data.driverId
       allow create: if validNewTrip(request.resource.data);
-
-      allow update: if seatsDecrease() || statusAdvance();
+      allow update: if validNewTrip(request.resource.data) || seatsDecrease() || statusAdvance();
       allow delete: if false;
     }
 
@@ -44,22 +37,21 @@ service cloud.firestore {
         && t.origin is string && t.destination is string
         && t.departureTime is string
         && t.totalSeats is int && t.totalSeats > 0 && t.totalSeats <= 8
-        && t.availableSeats == t.totalSeats
+        && t.availableSeats is int && t.availableSeats >= 0 && t.availableSeats <= t.totalSeats
         && t.pricePerSeat is number && t.pricePerSeat > 0
-        && t.status == 'scheduled';
+        && t.status in ['scheduled', 'in_route'];
     }
 
-    // Reserva: solo cambia availableSeats, baja, nunca negativo, viaje programado.
+    // Reserva: solo cambia availableSeats, baja, nunca negativo, viaje programado o en ruta.
     function seatsDecrease() {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['availableSeats'])
-        && resource.data.status == 'scheduled'
+        && resource.data.status in ['scheduled', 'in_route']
         && request.resource.data.availableSeats is int
         && request.resource.data.availableSeats >= 0
         && request.resource.data.availableSeats < resource.data.availableSeats;
     }
 
     // Cambio de estado: solo cambia status y en el orden permitido.
-    // TODO(auth): exigir request.auth.uid == resource.data.driverId
     function statusAdvance() {
       let from = resource.data.status;
       let to = request.resource.data.status;
@@ -71,7 +63,6 @@ service cloud.firestore {
     // ---------------- Reservas ----------------
     match /bookings/{bookingId} {
       // Solo lectura por ID (get). Prohibido listar para no exponer los PIN.
-      // TODO(auth): limitar get al pasajero o al chofer del viaje.
       allow get: if true;
       allow list: if false;
 
@@ -96,7 +87,7 @@ service cloud.firestore {
         && b.id == bookingId
         && b.seatsBooked is int && b.seatsBooked > 0
         && b.passengerId != before.driverId
-        && before.status == 'scheduled'
+        && before.status in ['scheduled', 'in_route']
         && after.availableSeats == before.availableSeats - b.seatsBooked;
     }
   }

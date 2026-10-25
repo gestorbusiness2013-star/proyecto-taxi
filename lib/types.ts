@@ -31,6 +31,7 @@ export interface Trip {
   driverName: string;
   driverPhone: string;
   vehiclePlate: string;
+  vehicleModel?: string;
   origin: string;
   destination: string;
   /** Fecha/hora de salida en ISO 8601 */
