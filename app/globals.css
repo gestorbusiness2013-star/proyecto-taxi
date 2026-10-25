@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0B0F17;
+  --foreground: #F9FAFB;
+  --taxi-amber: #F59E0B;
+  --taxi-yellow: #FACC15;
+  --road-asphalt: #111827;
+  --road-surface: #18202F;
+  --road-border: #273549;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+html, body {
+  background-color: #0B0F17;
+  color: #F9FAFB;
+  min-height: 100%;
+  overscroll-behavior-y: none;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Safe area padding utilities for mobile notches & bottom home indicators */
+.pb-safe {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 5rem);
+}
+
+.pt-safe {
+  padding-top: max(env(safe-area-inset-top, 0px), 0.75rem);
+}
+
+.bottom-bar-safe {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.5rem);
+}
+
+/* Custom scrollbar for mobile clean look */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0B0F17;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #273549;
+  border-radius: 4px;
+}

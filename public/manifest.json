@@ -1,0 +1,57 @@
+{
+  "name": "Proyecto Taxi - Viajes Interurbanos Venezuela",
+  "short_name": "Proyecto Taxi",
+  "description": "PWA de viajes compartidos e interurbanos en Venezuela. Rutas seguras entre Caracas, Valencia, Maracay, Barquisimeto y más.",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0B0F17",
+  "theme_color": "#0B0F17",
+  "lang": "es-VE",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "categories": ["travel", "transportation", "navigation"],
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Cartelera de Viajes",
+      "short_name": "Viajes",
+      "description": "Explorar viajes interurbanos disponibles",
+      "url": "/?tab=viajes",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Mis Reservas y Rutas",
+      "short_name": "Reservas",
+      "description": "Ver mis viajes programados y billetes",
+      "url": "/?tab=reservas",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Perfil y Seguridad",
+      "short_name": "Perfil",
+      "description": "Gestionar cuenta y contactos de emergencia",
+      "url": "/?tab=perfil",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    }
+  ]
+}
