@@ -4,72 +4,63 @@ import { useState } from 'react';
 import NavbarTop from '@/components/NavbarTop';
 import BottomNav, { NavTab } from '@/components/BottomNav';
 import TripsTab from '@/components/tabs/TripsTab';
-import BookingsTab, { UserBooking } from '@/components/tabs/BookingsTab';
+import BookingsTab, { BookingWithTrip } from '@/components/tabs/BookingsTab';
 import ProfileTab from '@/components/tabs/ProfileTab';
 import NotificationsModal from '@/components/NotificationsModal';
-import { TripData } from '@/components/BookingModal';
+import type { Trip, Booking } from '@/lib/types';
 
-const INITIAL_BOOKINGS: UserBooking[] = [
+const INITIAL_BOOKINGS: BookingWithTrip[] = [
   {
-    id: 'booking-seed-1',
-    trip: {
-      id: 'trip-seed',
-      origin: 'Caracas',
-      originDetail: 'Plaza Venezuela (Frente a Torre La Previsora)',
-      destination: 'Valencia',
-      destinationDetail: 'Redoma de Guaparo / C.C. Metrópolis',
-      departureTime: '05:30 PM',
-      date: 'Hoy',
-      duration: '2h 15m',
-      highway: 'Autopista Regional del Centro (ARC)',
-      driverName: 'Alejandro Bastidas',
-      driverRating: 4.96,
-      driverTrips: 148,
-      driverAvatar: 'AB',
-      isVerified: true,
-      vehicleModel: 'Toyota Corolla 2017',
-      vehiclePlate: 'AB123CD',
-      hasAC: true,
-      hasTrunk: true,
-      priceUsd: 15,
-      priceBcv: 15 * 85,
-      availableSeats: 2,
-      totalSeats: 4,
+    booking: {
+      id: 'booking-initial-1',
+      tripId: 'trip-caracas-valencia-1',
+      passengerId: 'passenger-carlos-1',
+      passengerName: 'Carlos E. Mendoza',
+      passengerPhone: '+584141234567',
+      seatsBooked: 1,
+      boardingPin: '0427',
+      status: 'confirmed',
+      createdAt: new Date().toISOString(),
     },
-    seats: 1,
-    passengerName: 'Carlos E. Mendoza',
-    notes: 'Bolso de mano y morral',
-    bookingCode: 'TAX-VE-8492',
-    status: 'confirmado',
-    createdAt: '2026-10-25',
+    trip: {
+      id: 'trip-caracas-valencia-1',
+      driverId: 'driver-alejandro-1',
+      driverName: 'Alejandro Bastidas',
+      driverPhone: '+584141234567',
+      vehiclePlate: 'AB123CD',
+      origin: 'Caracas',
+      destination: 'Valencia',
+      departureTime: new Date(Date.now() + 4 * 3600 * 1000).toISOString(),
+      totalSeats: 4,
+      availableSeats: 3,
+      pricePerSeat: 15,
+      status: 'scheduled',
+    },
   },
 ];
 
 export default function Home() {
   const [currentTab, setCurrentTab] = useState<NavTab>('viajes');
-  const [bookings, setBookings] = useState<UserBooking[]>(INITIAL_BOOKINGS);
+  const [bookings, setBookings] = useState<BookingWithTrip[]>(INITIAL_BOOKINGS);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
-  const handleBookTrip = (
-    trip: TripData,
-    seats: number,
-    passengerName: string,
-    notes: string
-  ) => {
-    const newBooking: UserBooking = {
-      id: `booking-${Date.now()}`,
+  const handleBookTripSuccess = (booking: Booking, trip: Trip) => {
+    const newEntry: BookingWithTrip = {
+      booking,
       trip,
-      seats,
-      passengerName,
-      notes,
-      bookingCode: `TAX-VE-${Math.floor(1000 + Math.random() * 9000)}`,
-      status: 'confirmado',
-      createdAt: new Date().toISOString(),
     };
-
-    setBookings((prev) => [newBooking, ...prev]);
-    // Switch to Reservas tab automatically so the passenger sees their boarding pass
+    setBookings((prev) => [newEntry, ...prev]);
     setCurrentTab('reservas');
+  };
+
+  const handleBookingStatusChanged = (bookingId: string, newStatus: Booking['status']) => {
+    setBookings((prev) =>
+      prev.map((item) =>
+        item.booking.id === bookingId
+          ? { ...item, booking: { ...item.booking, status: newStatus } }
+          : item
+      )
+    );
   };
 
   return (
@@ -80,13 +71,14 @@ export default function Home() {
       {/* Main Container - Mobile-First centered container */}
       <main className="mx-auto w-full max-w-md flex-1 px-4 pt-3 pb-safe">
         {currentTab === 'viajes' && (
-          <TripsTab onBookTrip={handleBookTrip} />
+          <TripsTab onBookTripSuccess={handleBookTripSuccess} />
         )}
 
         {currentTab === 'reservas' && (
           <BookingsTab
             bookings={bookings}
             onOpenViajesTab={() => setCurrentTab('viajes')}
+            onBookingStatusChanged={handleBookingStatusChanged}
           />
         )}
 
@@ -97,7 +89,7 @@ export default function Home() {
       <BottomNav
         currentTab={currentTab}
         onTabChange={(tab) => setCurrentTab(tab)}
-        activeBookingsCount={bookings.filter((b) => b.status !== 'completado').length}
+        activeBookingsCount={bookings.filter((b) => b.booking.status === 'confirmed').length}
       />
 
       {/* Notifications Modal */}

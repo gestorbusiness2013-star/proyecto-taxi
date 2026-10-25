@@ -1,0 +1,103 @@
+rules_version = '2';
+
+// Reglas de Proyecto Taxi.
+// IMPORTANTE: todavía no hay Firebase Auth, así que estas reglas NO pueden verificar
+// QUIÉN escribe (cualquiera podría hacerse pasar por un chofer o pasajero).
+// Lo que sí garantizan es la INTEGRIDAD de los datos:
+//   - nadie puede inventar asientos ni dejarlos en negativo,
+//   - una reserva solo se crea si descuenta exactamente sus asientos del viaje (atómico),
+//   - los estados solo avanzan en el orden permitido,
+//   - no se puede listar reservas (para no exponer los PIN), ni borrar nada.
+// Al añadir Auth, sustituir los comentarios "TODO(auth)" por request.auth.uid.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------- Usuarios ----------------
+    match /users/{userId} {
+      allow read: if true;
+      // TODO(auth): exigir request.auth.uid == userId
+      allow create, update: if validUser(request.resource.data);
+      allow delete: if false;
+    }
+
+    function validUser(u) {
+      return u.name is string && u.name.size() > 0
+        && u.phone is string
+        && u.dni is string
+        && u.role in ['driver', 'passenger'];
+    }
+
+    // ---------------- Viajes ----------------
+    match /trips/{tripId} {
+      allow read: if true;
+
+      // TODO(auth): exigir request.auth.uid == request.resource.data.driverId
+      allow create: if validNewTrip(request.resource.data);
+
+      allow update: if seatsDecrease() || statusAdvance();
+      allow delete: if false;
+    }
+
+    function validNewTrip(t) {
+      return t.driverId is string
+        && t.origin is string && t.destination is string
+        && t.departureTime is string
+        && t.totalSeats is int && t.totalSeats > 0 && t.totalSeats <= 8
+        && t.availableSeats == t.totalSeats
+        && t.pricePerSeat is number && t.pricePerSeat > 0
+        && t.status == 'scheduled';
+    }
+
+    // Reserva: solo cambia availableSeats, baja, nunca negativo, viaje programado.
+    function seatsDecrease() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['availableSeats'])
+        && resource.data.status == 'scheduled'
+        && request.resource.data.availableSeats is int
+        && request.resource.data.availableSeats >= 0
+        && request.resource.data.availableSeats < resource.data.availableSeats;
+    }
+
+    // Cambio de estado: solo cambia status y en el orden permitido.
+    // TODO(auth): exigir request.auth.uid == resource.data.driverId
+    function statusAdvance() {
+      let from = resource.data.status;
+      let to = request.resource.data.status;
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && ((from == 'scheduled' && to in ['in_route', 'cancelled'])
+          || (from == 'in_route' && to == 'completed'));
+    }
+
+    // ---------------- Reservas ----------------
+    match /bookings/{bookingId} {
+      // Solo lectura por ID (get). Prohibido listar para no exponer los PIN.
+      // TODO(auth): limitar get al pasajero o al chofer del viaje.
+      allow get: if true;
+      allow list: if false;
+
+      // La reserva debe crearse en la MISMA transacción que descuenta los asientos.
+      allow create: if validNewBooking(bookingId, request.resource.data);
+
+      // Solo se permite: confirmed -> boarded (chofer valida PIN) o confirmed -> cancelled.
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && resource.data.status == 'confirmed'
+        && request.resource.data.status in ['boarded', 'cancelled'];
+
+      allow delete: if false;
+    }
+
+    function validNewBooking(bookingId, b) {
+      let tripPath = /databases/$(database)/documents/trips/$(b.tripId);
+      let before = get(tripPath).data;
+      let after = getAfter(tripPath).data;
+      return b.status == 'confirmed'
+        && b.boardingPin is string && b.boardingPin.matches('^[0-9]{4}$')
+        && bookingId == b.tripId + '_' + b.boardingPin
+        && b.id == bookingId
+        && b.seatsBooked is int && b.seatsBooked > 0
+        && b.passengerId != before.driverId
+        && before.status == 'scheduled'
+        && after.availableSeats == before.availableSeats - b.seatsBooked;
+    }
+  }
+}

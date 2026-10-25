@@ -1,61 +1,71 @@
 'use client';
 
 import { useState } from 'react';
-import { X, CheckCircle, Car, ShieldCheck, MapPin, Users, DollarSign, AlertCircle } from 'lucide-react';
-
-export interface TripData {
-  id: string;
-  origin: string;
-  originDetail: string;
-  destination: string;
-  destinationDetail: string;
-  departureTime: string;
-  date: string;
-  duration: string;
-  highway: string;
-  driverName: string;
-  driverRating: number;
-  driverTrips: number;
-  driverAvatar: string;
-  isVerified: boolean;
-  vehicleModel: string;
-  vehiclePlate: string;
-  hasAC: boolean;
-  hasTrunk: boolean;
-  priceUsd: number;
-  priceBcv: number;
-  availableSeats: number;
-  totalSeats: number;
-}
+import { X, CheckCircle, Car, ShieldCheck, MapPin, Users, DollarSign, AlertCircle, KeyRound } from 'lucide-react';
+import type { Trip, Booking } from '@/lib/types';
+import { bookSeats } from '@/lib/db';
 
 interface BookingModalProps {
-  trip: TripData;
+  trip: Trip;
   onClose: () => void;
-  onConfirmBooking: (trip: TripData, seats: number, passengerName: string, notes: string) => void;
+  onBookingSuccess: (booking: Booking, trip: Trip) => void;
 }
 
 export default function BookingModal({
   trip,
   onClose,
-  onConfirmBooking,
+  onBookingSuccess,
 }: BookingModalProps) {
   const [selectedSeats, setSelectedSeats] = useState(1);
   const [passengerName, setPassengerName] = useState('Carlos E. Mendoza');
-  const [passengerPhone, setPassengerPhone] = useState('0414-1234567');
-  const [paymentMethod, setPaymentMethod] = useState<'pago_movil' | 'efectivo_usd' | 'zelle'>('efectivo_usd');
+  const [passengerPhone, setPassengerPhone] = useState('+584141234567');
+  const [paymentMethod, setPaymentMethod] = useState<'efectivo_usd' | 'pago_movil' | 'zelle'>('efectivo_usd');
   const [notes, setNotes] = useState('');
-  const [isSuccess, setIsSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [confirmedBooking, setConfirmedBooking] = useState<Booking | null>(null);
 
-  const totalUsd = trip.priceUsd * selectedSeats;
-  const totalBcv = trip.priceBcv * selectedSeats;
+  const totalUsd = trip.pricePerSeat * selectedSeats;
+  const totalBcv = totalUsd * 85; // Tasa referencial oficial BCV
 
-  const handleConfirm = () => {
-    setIsSuccess(true);
-    setTimeout(() => {
-      onConfirmBooking(trip, selectedSeats, passengerName, notes);
-      onClose();
-    }, 1200);
+  const handleConfirm = async () => {
+    try {
+      setLoading(true);
+      setErrorMsg(null);
+
+      const booking = await bookSeats({
+        tripId: trip.id,
+        passenger: {
+          id: 'passenger-carlos-1',
+          name: passengerName,
+          phone: passengerPhone,
+        },
+        seats: selectedSeats,
+      });
+
+      setConfirmedBooking(booking);
+      setTimeout(() => {
+        onBookingSuccess(booking, trip);
+      }, 1500);
+    } catch (err: unknown) {
+      console.error('Booking error:', err);
+      if (err instanceof Error) {
+        setErrorMsg(err.message);
+      } else {
+        setErrorMsg('Error al procesar la reserva. Intenta nuevamente.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const formattedDate = new Date(trip.departureTime).toLocaleDateString('es-VE', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-4">
@@ -64,7 +74,7 @@ export default function BookingModal({
         <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400">
-              Reserva de Asiento Inmediata
+              Reserva Atómica en Tiempo Real
             </span>
             <h2 className="text-base font-bold text-white">
               {trip.origin} ➔ {trip.destination}
@@ -79,40 +89,49 @@ export default function BookingModal({
           </button>
         </div>
 
-        {isSuccess ? (
-          <div className="py-8 text-center space-y-3">
+        {confirmedBooking ? (
+          <div className="py-6 text-center space-y-3">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 ring-2 ring-emerald-500/40 animate-pulse">
               <CheckCircle className="h-8 w-8" />
             </div>
             <h3 className="text-base font-bold text-white">¡Reserva Confirmada!</h3>
             <p className="text-xs text-zinc-400 max-w-xs mx-auto">
-              Tu asiento ha sido reservado. Se ha generado tu billete digital y código de abordaje en{' '}
-              <strong className="text-amber-400">Mis Reservas</strong>.
+              Se ha descontado tu cupo en tiempo real. Tu código de abordaje seguro es:
+            </p>
+            <div className="inline-flex items-center gap-2 rounded-xl border border-amber-500/50 bg-amber-500/15 px-4 py-2 text-lg font-black font-mono text-amber-400">
+              <KeyRound className="h-5 w-5 text-amber-400" />
+              <span>PIN: {confirmedBooking.boardingPin}</span>
+            </div>
+            <p className="text-[11px] text-zinc-400">
+              Muestra este PIN al chofer {trip.driverName} al momento de abordar.
             </p>
           </div>
         ) : (
           <div className="mt-4 space-y-4">
-            {/* Trip brief summary card */}
+            {errorMsg && (
+              <div className="rounded-xl border border-red-500/40 bg-red-950/40 p-3 text-xs text-red-300 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0 text-red-400" />
+                <span>{errorMsg}</span>
+              </div>
+            )}
+
+            {/* Trip summary */}
             <div className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-3 text-xs space-y-2">
               <div className="flex justify-between items-center text-zinc-300">
-                <span className="font-semibold text-white">Horario de Salida:</span>
-                <span className="text-amber-400 font-bold">{trip.departureTime} ({trip.date})</span>
+                <span className="font-semibold text-white">Salida Programada:</span>
+                <span className="text-amber-400 font-bold">{formattedDate}</span>
               </div>
               <div className="flex justify-between items-center text-zinc-400">
-                <span>Punto de Encuentro:</span>
-                <span className="text-zinc-200 text-right">{trip.originDetail}</span>
+                <span>Chofer & Placa:</span>
+                <span className="text-zinc-200">{trip.driverName} • Placa {trip.vehiclePlate}</span>
               </div>
               <div className="flex justify-between items-center text-zinc-400">
-                <span>Vehículo & Conductor:</span>
-                <span className="text-zinc-200">{trip.driverName} • {trip.vehicleModel}</span>
-              </div>
-              <div className="flex justify-between items-center text-zinc-400">
-                <span>Ruta Vial:</span>
-                <span className="text-emerald-400 font-medium">{trip.highway}</span>
+                <span>Cupos Disponibles:</span>
+                <span className="text-emerald-400 font-bold">{trip.availableSeats} de {trip.totalSeats} asientos</span>
               </div>
             </div>
 
-            {/* Seat selection */}
+            {/* Seat selector */}
             <div>
               <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
                 Cantidad de asientos ({trip.availableSeats} disponibles):
@@ -206,7 +225,7 @@ export default function BookingModal({
 
               <div>
                 <label className="block text-[11px] font-medium text-zinc-400 mb-1">
-                  Equipaje o notas (Opcional):
+                  Equipaje o notas adicionales (Opcional):
                 </label>
                 <input
                   type="text"
@@ -221,7 +240,7 @@ export default function BookingModal({
             {/* Price breakdown */}
             <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
               <div className="flex justify-between items-center text-xs">
-                <span className="text-zinc-300">Total a pagar ({selectedSeats} cupo{selectedSeats > 1 ? 's' : ''}):</span>
+                <span className="text-zinc-300">Total ({selectedSeats} cupo{selectedSeats > 1 ? 's' : ''}):</span>
                 <div className="text-right">
                   <span className="text-base font-black text-amber-400">${totalUsd} USD</span>
                   <div className="text-[10px] text-zinc-400">Ref. Bs. {totalBcv.toLocaleString('es-VE')}</div>
@@ -229,21 +248,27 @@ export default function BookingModal({
               </div>
             </div>
 
-            {/* Action buttons */}
+            {/* Actions */}
             <div className="pt-2 flex gap-2">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900 py-2.5 text-xs font-semibold text-zinc-300 hover:bg-zinc-800"
+                disabled={loading}
+                className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900 py-2.5 text-xs font-semibold text-zinc-300 hover:bg-zinc-800 disabled:opacity-50"
               >
                 Cancelar
               </button>
               <button
                 type="button"
                 onClick={handleConfirm}
-                className="flex-1 rounded-xl bg-amber-500 py-2.5 text-xs font-bold text-zinc-950 shadow-lg shadow-amber-500/20 hover:bg-amber-400 active:scale-95 transition"
+                disabled={loading}
+                className="flex-1 rounded-xl bg-amber-500 py-2.5 text-xs font-bold text-zinc-950 shadow-lg shadow-amber-500/20 hover:bg-amber-400 active:scale-95 transition disabled:opacity-50 flex items-center justify-center gap-1.5"
               >
-                Confirmar Asiento
+                {loading ? (
+                  <span>Procesando...</span>
+                ) : (
+                  <span>Confirmar y Obtener PIN</span>
+                )}
               </button>
             </div>
           </div>

@@ -5,51 +5,64 @@ import {
   QrCode,
   CalendarCheck,
   MapPin,
-  Phone,
   MessageCircle,
   Share2,
   Clock,
   ShieldCheck,
   CheckCircle2,
   Car,
-  ChevronRight,
-  AlertTriangle,
+  KeyRound,
+  ShieldAlert,
+  Play,
+  Flag,
+  AlertCircle,
 } from 'lucide-react';
-import { TripData } from '../BookingModal';
+import type { Booking, Trip, TripStatus } from '@/lib/types';
+import { validateBoardingPin, updateTripStatus } from '@/lib/db';
 
-export interface UserBooking {
-  id: string;
-  trip: TripData;
-  seats: number;
-  passengerName: string;
-  notes: string;
-  bookingCode: string;
-  status: 'confirmado' | 'en_camino' | 'completado';
-  createdAt: string;
+export interface BookingWithTrip {
+  booking: Booking;
+  trip?: Trip;
 }
 
 interface BookingsTabProps {
-  bookings: UserBooking[];
+  bookings: BookingWithTrip[];
   onOpenViajesTab: () => void;
+  onBookingStatusChanged?: (bookingId: string, newStatus: Booking['status']) => void;
 }
 
-export default function BookingsTab({ bookings, onOpenViajesTab }: BookingsTabProps) {
-  const [activeSubTab, setActiveSubTab] = useState<'activas' | 'historial'>('activas');
-  const [selectedQrBooking, setSelectedQrBooking] = useState<UserBooking | null>(null);
+export default function BookingsTab({
+  bookings,
+  onOpenViajesTab,
+  onBookingStatusChanged,
+}: BookingsTabProps) {
+  const [activeSubTab, setActiveSubTab] = useState<'pasajero' | 'chofer'>('pasajero');
+  const [selectedQrBooking, setSelectedQrBooking] = useState<BookingWithTrip | null>(null);
   const [shareSuccess, setShareSuccess] = useState<string | null>(null);
 
-  const activeBookings = bookings.filter((b) => b.status !== 'completado');
-  const completedBookings = bookings.filter((b) => b.status === 'completado');
+  // Driver Validation Form State
+  const [driverTripId, setDriverTripId] = useState('trip-caracas-valencia-1');
+  const [driverPinInput, setDriverPinInput] = useState('');
+  const [validating, setValidating] = useState(false);
+  const [pinValidationResult, setPinValidationResult] = useState<{
+    success: boolean;
+    message: string;
+    booking?: Booking;
+  } | null>(null);
 
-  const handleShareTrip = (booking: UserBooking) => {
+  // Driver Trip Status State
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  const handleShareTrip = (item: BookingWithTrip) => {
+    const { booking, trip } = item;
+    const origin = trip?.origin || 'Caracas';
+    const dest = trip?.destination || 'Valencia';
     const message = `🚕 Hola! Estoy viajando con Proyecto Taxi:
-Ruta: ${booking.trip.origin} ➔ ${booking.trip.destination}
-Salida: ${booking.trip.departureTime} (${booking.trip.date})
-Vía: ${booking.trip.highway}
-Vehículo: ${booking.trip.vehicleModel} (${booking.trip.vehiclePlate})
-Conductor: ${booking.trip.driverName}
-Punto de encuentro: ${booking.trip.originDetail}
-Código de abordaje: ${booking.bookingCode}`;
+Ruta: ${origin} ➔ ${dest}
+Asientos reservados: ${booking.seatsBooked}
+PIN de abordaje de 4 dígitos: ${booking.boardingPin}
+Estado: ${booking.status.toUpperCase()}`;
 
     if (navigator.share) {
       navigator.share({
@@ -63,37 +76,89 @@ Código de abordaje: ${booking.bookingCode}`;
     }
   };
 
+  const handleValidatePin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!/^\d{4}$/.test(driverPinInput)) {
+      setPinValidationResult({
+        success: false,
+        message: 'El PIN debe contener exactamente 4 dígitos.',
+      });
+      return;
+    }
+
+    try {
+      setValidating(true);
+      setPinValidationResult(null);
+
+      // Validate PIN using helper from lib/db.ts
+      const validatedBooking = await validateBoardingPin(
+        driverTripId,
+        'driver-alejandro-1', // ID del chofer autenticado
+        driverPinInput
+      );
+
+      setPinValidationResult({
+        success: true,
+        message: `¡PIN verificado con éxito! Pasajero ${validatedBooking.passengerName} ha abordado (${validatedBooking.seatsBooked} asientos).`,
+        booking: validatedBooking,
+      });
+      setDriverPinInput('');
+      onBookingStatusChanged?.(validatedBooking.id, 'boarded');
+    } catch (err: unknown) {
+      setPinValidationResult({
+        success: false,
+        message: err instanceof Error ? err.message : 'Error al validar PIN.',
+      });
+    } finally {
+      setValidating(false);
+    }
+  };
+
+  const handleAdvanceStatus = async (nextStatus: TripStatus) => {
+    try {
+      setUpdatingStatus(true);
+      setStatusMessage(null);
+      await updateTripStatus(driverTripId, 'driver-alejandro-1', nextStatus);
+      setStatusMessage(`Estado del viaje actualizado a: ${nextStatus.toUpperCase()}`);
+    } catch (err: unknown) {
+      setStatusMessage(err instanceof Error ? err.message : 'Error al actualizar estado.');
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
   return (
     <div className="space-y-4 pb-20">
-      {/* Sub tabs: Activas vs Historial */}
+      {/* Sub tabs: Vista Pasajero vs Panel Chofer */}
       <div className="flex rounded-xl border border-zinc-800 bg-zinc-950 p-1">
         <button
           type="button"
-          onClick={() => setActiveSubTab('activas')}
+          onClick={() => setActiveSubTab('pasajero')}
           className={`flex-1 rounded-lg py-2 text-xs font-bold transition ${
-            activeSubTab === 'activas'
+            activeSubTab === 'pasajero'
               ? 'bg-amber-500 text-zinc-950 shadow-sm'
               : 'text-zinc-400 hover:text-zinc-200'
           }`}
         >
-          Próximos Viajes ({activeBookings.length})
+          Mis Billetes ({bookings.length})
         </button>
         <button
           type="button"
-          onClick={() => setActiveSubTab('historial')}
+          onClick={() => setActiveSubTab('chofer')}
           className={`flex-1 rounded-lg py-2 text-xs font-bold transition ${
-            activeSubTab === 'historial'
+            activeSubTab === 'chofer'
               ? 'bg-amber-500 text-zinc-950 shadow-sm'
               : 'text-zinc-400 hover:text-zinc-200'
           }`}
         >
-          Historial ({completedBookings.length})
+          Panel Chofer (Validar PIN)
         </button>
       </div>
 
-      {activeSubTab === 'activas' && (
+      {/* PESTAÑA PASAJERO: Ver billetes y PIN */}
+      {activeSubTab === 'pasajero' && (
         <div className="space-y-4">
-          {activeBookings.length === 0 ? (
+          {bookings.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-zinc-800 p-8 text-center">
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-900 text-zinc-500 mb-3">
                 <CalendarCheck className="h-6 w-6" />
@@ -111,165 +176,206 @@ Código de abordaje: ${booking.bookingCode}`;
               </button>
             </div>
           ) : (
-            activeBookings.map((booking) => (
-              <div
-                key={booking.id}
-                className="relative overflow-hidden rounded-2xl border border-amber-500/40 bg-gradient-to-b from-zinc-900 via-zinc-900 to-[#0e1624] p-4 shadow-xl"
-              >
-                {/* Boarding Pass header */}
-                <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">
-                      Boleto Digital Confirmado
-                    </span>
-                  </div>
-                  <span className="rounded-md bg-zinc-800 px-2 py-0.5 font-mono text-[11px] font-bold text-amber-400 border border-zinc-700">
-                    {booking.bookingCode}
-                  </span>
-                </div>
+            bookings.map((item) => {
+              const { booking, trip } = item;
+              const origin = trip?.origin || 'Caracas';
+              const destination = trip?.destination || 'Valencia';
+              const isBoarded = booking.status === 'boarded';
 
-                {/* Route Header */}
-                <div className="my-3 flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-black text-white">
-                      {booking.trip.origin} ➔ {booking.trip.destination}
-                    </h3>
-                    <p className="text-xs text-amber-400 font-semibold mt-0.5">
-                      {booking.trip.departureTime} • {booking.trip.date} ({booking.trip.duration})
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <span className="rounded-lg bg-amber-500/20 border border-amber-500/40 px-2.5 py-1 text-xs font-black text-amber-400">
-                      {booking.seats} {booking.seats === 1 ? 'Asiento' : 'Asientos'}
-                    </span>
-                  </div>
-                </div>
+              return (
+                <div
+                  key={booking.id}
+                  className="relative overflow-hidden rounded-2xl border border-amber-500/40 bg-gradient-to-b from-zinc-900 via-zinc-900 to-[#0e1624] p-4 shadow-xl"
+                >
+                  {/* Boarding Pass header */}
+                  <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`flex h-2.5 w-2.5 rounded-full ${
+                          isBoarded ? 'bg-sky-400' : 'bg-emerald-400 animate-pulse'
+                        }`}
+                      />
+                      <span
+                        className={`text-xs font-bold uppercase tracking-wider ${
+                          isBoarded ? 'text-sky-400' : 'text-emerald-400'
+                        }`}
+                      >
+                        {isBoarded ? 'ABORDADO' : 'CONFIRMADO'}
+                      </span>
+                    </div>
 
-                {/* Meeting Point Details */}
-                <div className="rounded-xl border border-zinc-800 bg-zinc-950/80 p-3 text-xs space-y-1.5">
-                  <div className="flex items-start gap-2 text-zinc-300">
-                    <MapPin className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-semibold text-white">Punto de encuentro:</span>
-                      <p className="text-zinc-400 text-[11px] mt-0.5">{booking.trip.originDetail}</p>
+                    <div className="flex items-center gap-1.5 rounded-lg border border-amber-500/50 bg-amber-500/15 px-2.5 py-1 text-xs font-black font-mono text-amber-400">
+                      <KeyRound className="h-3.5 w-3.5" />
+                      <span>PIN: {booking.boardingPin}</span>
                     </div>
                   </div>
-                  <div className="flex items-start gap-2 text-zinc-300 pt-1 border-t border-zinc-900">
-                    <Car className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+
+                  {/* Route Header */}
+                  <div className="my-3 flex items-center justify-between">
                     <div>
-                      <span className="font-semibold text-white">Vehículo:</span>
-                      <p className="text-zinc-400 text-[11px]">
-                        {booking.trip.vehicleModel} • Placa:{' '}
-                        <span className="font-mono text-zinc-200">{booking.trip.vehiclePlate}</span>
+                      <h3 className="text-lg font-black text-white">
+                        {origin} ➔ {destination}
+                      </h3>
+                      <p className="text-xs text-amber-400 font-semibold mt-0.5">
+                        Pasajero: {booking.passengerName}
                       </p>
                     </div>
-                  </div>
-                </div>
-
-                {/* Driver information & contact */}
-                <div className="mt-3 flex items-center justify-between pt-2">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 text-amber-400 text-xs font-bold border border-zinc-700">
-                      {booking.trip.driverAvatar}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-1 text-xs font-bold text-white">
-                        <span>{booking.trip.driverName}</span>
-                        <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-                      </div>
-                      <span className="text-[10px] text-zinc-400">
-                        ★ {booking.trip.driverRating} ({booking.trip.driverTrips} viajes)
+                    <div className="text-right">
+                      <span className="rounded-lg bg-amber-500/20 border border-amber-500/40 px-2.5 py-1 text-xs font-black text-amber-400">
+                        {booking.seatsBooked} {booking.seatsBooked === 1 ? 'Asiento' : 'Asientos'}
                       </span>
                     </div>
                   </div>
 
-                  {/* WhatsApp contact & Boarding QR */}
-                  <div className="flex items-center gap-1.5">
+                  {/* Actions & QR trigger */}
+                  <div className="mt-3 flex items-center justify-between pt-2 border-t border-zinc-800">
                     <button
                       type="button"
-                      onClick={() => setSelectedQrBooking(booking)}
-                      className="flex items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-xs font-semibold text-zinc-200 hover:bg-zinc-700 active:scale-95"
+                      onClick={() => setSelectedQrBooking(item)}
+                      className="flex items-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-200 hover:bg-zinc-700 active:scale-95"
                     >
                       <QrCode className="h-3.5 w-3.5 text-amber-400" />
-                      <span>QR</span>
+                      <span>Ver Código QR</span>
                     </button>
-                    <a
-                      href={`https://wa.me/584141234567?text=${encodeURIComponent(
-                        `Hola ${booking.trip.driverName}, tengo reserva de viaje ${booking.bookingCode} de ${booking.trip.origin} a ${booking.trip.destination}.`
-                      )}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-bold text-white hover:bg-emerald-500 active:scale-95"
+
+                    <button
+                      type="button"
+                      onClick={() => handleShareTrip(item)}
+                      className="flex items-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-[11px] font-bold text-amber-400 hover:bg-amber-500/20 active:scale-95"
                     >
-                      <MessageCircle className="h-3.5 w-3.5" />
-                      <span>WhatsApp</span>
-                    </a>
+                      <Share2 className="h-3.5 w-3.5" />
+                      <span>{shareSuccess === booking.id ? '¡Copiado!' : 'Compartir'}</span>
+                    </button>
                   </div>
                 </div>
-
-                {/* Highway Share for family peace of mind */}
-                <div className="mt-3 pt-2.5 border-t border-zinc-800/80 flex items-center justify-between">
-                  <span className="text-[11px] text-zinc-400">
-                    Seguridad: comparte ruta con tus familiares
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleShareTrip(booking)}
-                    className="flex items-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-bold text-amber-400 hover:bg-amber-500/20 active:scale-95"
-                  >
-                    <Share2 className="h-3 w-3" />
-                    <span>{shareSuccess === booking.id ? '¡Copiado!' : 'Compartir Ruta'}</span>
-                  </button>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       )}
 
-      {/* Historial de viajes tab */}
-      {activeSubTab === 'historial' && (
-        <div className="space-y-3">
-          {completedBookings.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-zinc-800 p-8 text-center text-zinc-400">
-              <p className="text-xs">No tienes viajes completados en tu historial aún.</p>
+      {/* PESTAÑA CHOFER: Validar PIN de Abordaje y Cambiar Estado de Viaje */}
+      {activeSubTab === 'chofer' && (
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-amber-500/40 bg-zinc-950 p-4 shadow-xl space-y-4">
+            <div className="flex items-center gap-2 pb-2 border-b border-zinc-800">
+              <KeyRound className="h-5 w-5 text-amber-400" />
+              <div>
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                  Validación de PIN de Abordaje
+                </h3>
+                <p className="text-[11px] text-zinc-400">
+                  Introduce el PIN de 4 dígitos que te muestre el pasajero al subir al carro.
+                </p>
+              </div>
             </div>
-          ) : (
-            completedBookings.map((b) => (
-              <div
-                key={b.id}
-                className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3.5 text-xs space-y-2 opacity-90"
-              >
-                <div className="flex justify-between items-center">
-                  <span className="font-bold text-white">
-                    {b.trip.origin} ➔ {b.trip.destination}
-                  </span>
-                  <span className="text-[10px] text-zinc-400 font-mono">Completado</span>
-                </div>
-                <div className="flex justify-between text-zinc-400 text-[11px]">
-                  <span>Conductor: {b.trip.driverName}</span>
-                  <span className="text-amber-400 font-bold">${b.trip.priceUsd * b.seats} USD</span>
-                </div>
-                <div className="flex justify-between items-center pt-1 border-t border-zinc-800/60 text-[10px] text-emerald-400">
-                  <span>★ Calificación dada: 5.0 Excelente</span>
-                  <span>Recibo verificado</span>
-                </div>
+
+            <form onSubmit={handleValidatePin} className="space-y-3">
+              <div>
+                <label className="block text-[11px] font-medium text-zinc-400 mb-1">
+                  ID de tu viaje en curso:
+                </label>
+                <select
+                  value={driverTripId}
+                  onChange={(e) => setDriverTripId(e.target.value)}
+                  className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs text-white focus:border-amber-500 focus:outline-none"
+                >
+                  <option value="trip-caracas-valencia-1">Caracas ➔ Valencia (Alejandro Bastidas)</option>
+                  <option value="trip-caracas-maracay-1">Caracas ➔ Maracay (Marcos Rivas)</option>
+                  <option value="trip-valencia-caracas-1">Valencia ➔ Caracas (Guillermo Peña)</option>
+                </select>
               </div>
-            ))
-          )}
+
+              <div>
+                <label className="block text-[11px] font-medium text-zinc-400 mb-1">
+                  PIN de abordaje (4 dígitos):
+                </label>
+                <input
+                  type="text"
+                  maxLength={4}
+                  value={driverPinInput}
+                  onChange={(e) => setDriverPinInput(e.target.value.replace(/\D/g, ''))}
+                  placeholder="Ej: 0427"
+                  className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2.5 text-center text-lg font-black font-mono tracking-widest text-amber-400 focus:border-amber-500 focus:outline-none"
+                />
+              </div>
+
+              {pinValidationResult && (
+                <div
+                  className={`rounded-xl p-3 text-xs flex items-start gap-2 border ${
+                    pinValidationResult.success
+                      ? 'border-emerald-500/40 bg-emerald-950/40 text-emerald-300'
+                      : 'border-red-500/40 bg-red-950/40 text-red-300'
+                  }`}
+                >
+                  {pinValidationResult.success ? (
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400 mt-0.5" />
+                  ) : (
+                    <AlertCircle className="h-4 w-4 shrink-0 text-red-400 mt-0.5" />
+                  )}
+                  <span>{pinValidationResult.message}</span>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={validating || driverPinInput.length !== 4}
+                className="w-full rounded-xl bg-amber-500 py-2.5 text-xs font-bold text-zinc-950 shadow-md shadow-amber-500/20 hover:bg-amber-400 active:scale-95 transition disabled:opacity-50"
+              >
+                {validating ? 'Validando en Firestore...' : 'Validar PIN y Autorizar Abordaje'}
+              </button>
+            </form>
+          </div>
+
+          {/* Estado del Viaje (Transición de Estado) */}
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4 space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-amber-400">
+              Control de Estado del Viaje (Chofer)
+            </h4>
+            <p className="text-[11px] text-zinc-400">
+              Actualiza el estado de tu viaje interurbano en Firestore:
+            </p>
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => handleAdvanceStatus('in_route')}
+                disabled={updatingStatus}
+                className="flex items-center justify-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-950/30 py-2 px-3 text-xs font-bold text-emerald-400 hover:bg-emerald-950/50 active:scale-95 transition"
+              >
+                <Play className="h-3.5 w-3.5" />
+                <span>En Carretera (in_route)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleAdvanceStatus('completed')}
+                disabled={updatingStatus}
+                className="flex items-center justify-center gap-1.5 rounded-xl border border-sky-500/40 bg-sky-950/30 py-2 px-3 text-xs font-bold text-sky-400 hover:bg-sky-950/50 active:scale-95 transition"
+              >
+                <Flag className="h-3.5 w-3.5" />
+                <span>Finalizado (completed)</span>
+              </button>
+            </div>
+
+            {statusMessage && (
+              <p className="text-[11px] font-semibold text-amber-300 mt-1">
+                {statusMessage}
+              </p>
+            )}
+          </div>
         </div>
       )}
 
-      {/* QR Boarding Pass Modal */}
+      {/* Modal QR con PIN visible */}
       {selectedQrBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div className="w-full max-w-xs rounded-2xl border border-amber-500/40 bg-zinc-950 p-5 text-center shadow-2xl">
             <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-              Código de Abordaje
+              Boleto y PIN de Abordaje
             </h3>
             <p className="text-[11px] text-zinc-400 mt-0.5">
-              Muestra este código al conductor antes de abordar en el punto de encuentro
+              Muestra este código o dicta tu PIN de 4 dígitos al chofer
             </p>
 
             {/* QR Mockup visual */}
@@ -288,8 +394,8 @@ Código de abordaje: ${booking.bookingCode}`;
               </div>
             </div>
 
-            <div className="rounded-lg bg-zinc-900 p-2 font-mono text-sm font-black text-amber-400 border border-zinc-800">
-              {selectedQrBooking.bookingCode}
+            <div className="rounded-xl bg-amber-500/15 p-2.5 font-mono text-base font-black text-amber-400 border border-amber-500/30">
+              PIN: {selectedQrBooking.booking.boardingPin}
             </div>
 
             <button
