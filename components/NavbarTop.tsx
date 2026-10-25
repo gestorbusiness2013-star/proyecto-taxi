@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Shield, AlertTriangle, Car, Bell } from 'lucide-react';
 import { useState } from 'react';
 import SosModal from './SosModal';
@@ -50,6 +51,16 @@ export default function NavbarTop({ onOpenNotifications }: NavbarTopProps) {
                 ARC ACTIVA
               </span>
             </div>
+
+            {/* Link to Conductor view */}
+            <Link
+              href="/conductor"
+              className="flex items-center gap-1 rounded-lg border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-[11px] font-bold text-amber-400 hover:bg-amber-500/20 active:scale-95 transition"
+              title="Panel del chofer"
+            >
+              <Car className="h-3 w-3" />
+              <span className="hidden xs:inline">Chofer</span>
+            </Link>
 
             {/* Emergency SOS Button for Highway Safety */}
             <button

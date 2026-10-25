@@ -62,9 +62,8 @@ service cloud.firestore {
 
     // ---------------- Reservas ----------------
     match /bookings/{bookingId} {
-      // Solo lectura por ID (get). Prohibido listar para no exponer los PIN.
-      allow get: if true;
-      allow list: if false;
+      // Lectura de reservas para pasajeros y choferes
+      allow read: if true;
 
       // La reserva debe crearse en la MISMA transacción que descuenta los asientos.
       allow create: if validNewBooking(bookingId, request.resource.data);

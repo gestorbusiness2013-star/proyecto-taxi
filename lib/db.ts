@@ -9,6 +9,7 @@ import {
   query,
   runTransaction,
   where,
+  setDoc,
   type Firestore,
   type Unsubscribe,
 } from 'firebase/firestore';
@@ -302,3 +303,78 @@ export async function validateBoardingPin(
     return { ...booking, status: 'boarded' };
   });
 }
+
+// ---------------------------------------------------------------------------
+// 5. Publicación de nuevo viaje (Chofer)
+// ---------------------------------------------------------------------------
+
+export async function publishTrip(
+  tripData: Omit<Trip, 'id' | 'availableSeats' | 'status'> & { vehicleModel?: string }
+): Promise<Trip> {
+  const db = getDb();
+  const tripRef = doc(collection(db, COLLECTIONS.trips));
+  const newTrip: Trip = {
+    ...tripData,
+    id: tripRef.id,
+    availableSeats: tripData.totalSeats,
+    status: 'scheduled',
+  };
+
+  await setDoc(tripRef, newTrip);
+  return newTrip;
+}
+
+// ---------------------------------------------------------------------------
+// 6. Listeners para el Monitor del Chofer
+// ---------------------------------------------------------------------------
+
+/**
+ * Escucha en tiempo real todos los viajes publicados por el chofer.
+ */
+export function getDriverTrips(
+  driverId: string,
+  onData: (trips: Trip[]) => void,
+  onError?: (error: Error) => void
+): Unsubscribe {
+  const q = query(
+    collection(getDb(), COLLECTIONS.trips),
+    where('driverId', '==', driverId)
+  );
+
+  return onSnapshot(
+    q,
+    (snap) => {
+      const trips = snap.docs
+        .map((d) => ({ ...(d.data() as Omit<Trip, 'id'>), id: d.id }))
+        .sort((a, b) => b.departureTime.localeCompare(a.departureTime));
+      onData(trips);
+    },
+    (err) => onError?.(err)
+  );
+}
+
+/**
+ * Escucha en tiempo real los pasajeros y reservas de un viaje específico.
+ */
+export function getTripBookings(
+  tripId: string,
+  onData: (bookings: Booking[]) => void,
+  onError?: (error: Error) => void
+): Unsubscribe {
+  const q = query(
+    collection(getDb(), COLLECTIONS.bookings),
+    where('tripId', '==', tripId)
+  );
+
+  return onSnapshot(
+    q,
+    (snap) => {
+      const bookings = snap.docs
+        .map((d) => ({ ...(d.data() as Omit<Booking, 'id'>), id: d.id }))
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      onData(bookings);
+    },
+    (err) => onError?.(err)
+  );
+}
+
