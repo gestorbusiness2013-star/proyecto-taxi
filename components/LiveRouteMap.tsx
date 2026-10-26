@@ -162,21 +162,28 @@ export default function LiveRouteMap({
         attributionControl: false,
       });
 
-      // Añadir control de zoom personalizado en esquina superior derecha
+      // Añadir control de zoom personalizado en esquina inferior derecha para no solapar filtros
       L.control
         .zoom({
-          position: 'topright',
+          position: 'bottomright',
         })
         .addTo(map);
 
-      // 1. Capa de mapa: CartoDB Dark Matter pura en alta resolución ('all' / dark_all) para fondo negro mate limpio
+      // 1. Capa de mapa base: Esri World Dark Gray Canvas (100% libre sin API key ni marcas de agua)
       L.tileLayer(
-        'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
         {
-          subdomains: 'abcd',
-          maxZoom: 19,
-          attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+          maxZoom: 16,
+          attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+        }
+      ).addTo(map);
+
+      // Capa de referencia: Nombres de ciudades, estados y autopistas nítidos
+      L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+        {
+          maxZoom: 16,
+          attribution: '&copy; Esri',
         }
       ).addTo(map);
 
@@ -332,7 +339,7 @@ export default function LiveRouteMap({
         const markerColor = isEnRuta ? '#F59E0B' : '#38BDF8';
         const pingColor = isEnRuta ? 'bg-amber-400' : 'bg-sky-400';
 
-        // Flightradar24 custom HTML DivIcon con orientación según heading
+        // Flightradar24 custom HTML DivIcon con vehículo Top-Down GPS orientado según rumbo (heading)
         const iconHtml = `
           <div class="relative flex items-center justify-center cursor-pointer group" style="width: 52px; height: 52px;">
             ${
@@ -341,28 +348,43 @@ export default function LiveRouteMap({
                 : ''
             }
             <div 
-              class="relative z-10 flex h-9 w-9 items-center justify-center rounded-2xl shadow-xl border-2 transition-transform duration-300"
+              class="relative z-10 flex h-10 w-10 items-center justify-center rounded-full shadow-2xl border-2 transition-transform duration-300"
               style="
                 background: #0B0F17; 
                 border-color: ${markerColor}; 
-                box-shadow: 0 0 12px ${markerColor}60;
+                box-shadow: 0 0 14px ${markerColor}70;
                 transform: rotate(${coords.heading}deg);
               "
             >
-              <!-- Ícono de auto apuntando hacia el norte (rumbo 0°) -->
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${markerColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
-                <circle cx="7" cy="17" r="2"/>
-                <circle cx="17" cy="17" r="2"/>
+              <!-- Ícono de vehículo visto desde arriba (Top-Down GPS) apuntando hacia el norte (0°) -->
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <!-- Chasis / Carrocería del auto -->
+                <path d="M7 5.5C7 3.5 8.5 2 11 2H13C15.5 2 17 3.5 17 5.5V18.5C17 20.5 15.5 22 13 22H11C8.5 22 7 20.5 7 18.5V5.5Z" fill="${markerColor}" />
+                <!-- Parabrisas delantero (oscuro) -->
+                <path d="M8.5 7C8.5 6.2 9.2 5.5 10 5.5H14C14.8 5.5 15.5 6.2 15.5 7V9.5H8.5V7Z" fill="#0B0F17" />
+                <!-- Techo / Cabina -->
+                <rect x="9" y="10.5" width="6" height="4" rx="0.5" fill="${markerColor}" opacity="0.8" />
+                <!-- Vidrio trasero -->
+                <path d="M8.5 16H15.5V17.5C15.5 18 15 18.5 14.5 18.5H9.5C9 18.5 8.5 18 8.5 17.5V16Z" fill="#0B0F17" />
+                <!-- Faros delanteros brillantes en amarillo -->
+                <circle cx="9" cy="3.2" r="1.2" fill="#FEF08A" />
+                <circle cx="15" cy="3.2" r="1.2" fill="#FEF08A" />
+                <!-- Luces de freno rojas traseras -->
+                <rect x="8.5" y="21" width="2" height="0.8" rx="0.3" fill="#EF4444" />
+                <rect x="13.5" y="21" width="2" height="0.8" rx="0.3" fill="#EF4444" />
+                <!-- Espejos retrovisores laterales -->
+                <rect x="5.5" y="7" width="1.5" height="2.5" rx="0.5" fill="${markerColor}" />
+                <rect x="17" y="7" width="1.5" height="2.5" rx="0.5" fill="${markerColor}" />
               </svg>
             </div>
 
-            <!-- Etiqueta de velocidad / puestos flotante -->
-            <div class="absolute -bottom-4 z-20 flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-black font-mono shadow-md border whitespace-nowrap"
-              style="background: #0B0F17E6; border-color: ${markerColor}80; color: ${markerColor};">
+            <!-- Etiqueta de chofer y puestos flotante -->
+            <div class="absolute -bottom-4 z-20 flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-black font-mono shadow-md border whitespace-nowrap pointer-events-none select-none"
+              style="background: #0B0F17FA; border-color: ${markerColor}90; color: #FFFFFF;">
+              <span style="color: ${markerColor};">●</span>
               <span>${trip.driverName.split(' ')[0]}</span>
-              <span>•</span>
-              <span>${trip.availableSeats}p</span>
+              <span style="color: ${markerColor}AA;">•</span>
+              <span style="color: ${markerColor}; font-weight: 800;">${trip.availableSeats}p</span>
             </div>
           </div>
         `;
@@ -457,9 +479,9 @@ export default function LiveRouteMap({
         <span className="text-zinc-400">unidades transmitiendo en vivo</span>
       </div>
 
-      {/* Atribución oficial CartoDB Dark Matter & OpenStreetMap */}
+      {/* Atribución oficial Esri World Dark Gray Canvas & OpenStreetMap */}
       <div className="absolute bottom-2.5 right-2.5 z-10 text-[9px] text-zinc-500 bg-zinc-950/80 backdrop-blur-sm border border-zinc-900 px-2 py-0.5 rounded-md pointer-events-auto">
-        &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer" className="hover:underline text-zinc-400">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer" className="hover:underline text-zinc-400">CARTO</a>
+        &copy; <a href="https://www.esri.com" target="_blank" rel="noopener noreferrer" className="hover:underline text-zinc-400">Esri</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer" className="hover:underline text-zinc-400">OpenStreetMap</a>
       </div>
 
       {/* REQUISITO 3: FICHA INFERIOR FLOTANTE (BOTTOM-SHEET) PARA USUARIOS AUTENTICADOS */}
