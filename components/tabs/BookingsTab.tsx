@@ -369,7 +369,7 @@ Estado: ${booking.status.toUpperCase()}`;
 
       {/* Modal QR con PIN visible */}
       {selectedQrBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-md p-4 overflow-y-auto">
           <div className="w-full max-w-xs rounded-2xl border border-amber-500/40 bg-zinc-950 p-5 text-center shadow-2xl">
             <h3 className="text-sm font-bold text-white uppercase tracking-wider">
               Boleto y PIN de Abordaje

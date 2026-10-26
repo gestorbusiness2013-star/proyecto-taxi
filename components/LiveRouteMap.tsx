@@ -403,7 +403,7 @@ export default function LiveRouteMap({
   return (
     <div className="relative w-full h-[calc(100vh-12.5rem)] min-h-[460px] rounded-3xl overflow-hidden border border-zinc-800 bg-[#080B10] shadow-2xl flex flex-col">
       {/* Barra de Filtros Flotante de Corredores Viales */}
-      <div className="absolute top-3 left-3 right-3 z-[400] flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+      <div className="absolute top-3 left-3 right-3 z-10 flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
         <button
           type="button"
           onClick={() => handleFilterClick('all')}
@@ -448,7 +448,7 @@ export default function LiveRouteMap({
       <div ref={mapContainerRef} className="w-full h-full z-0 bg-[#080B10]" />
 
       {/* Badge Flotante Inferior de Estado en Vivo estilo Flightradar */}
-      <div className="absolute bottom-3 left-3 z-[400] flex items-center gap-2 rounded-xl bg-zinc-950/85 backdrop-blur-md border border-zinc-800 px-2.5 py-1.5 text-[11px] text-zinc-300 shadow-xl">
+      <div className="absolute bottom-3 left-3 z-10 flex items-center gap-2 rounded-xl bg-zinc-950/85 backdrop-blur-md border border-zinc-800 px-2.5 py-1.5 text-[11px] text-zinc-300 shadow-xl">
         <span className="relative flex h-2.5 w-2.5">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
           <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
@@ -458,13 +458,13 @@ export default function LiveRouteMap({
       </div>
 
       {/* Atribución oficial CartoDB Dark Matter & OpenStreetMap */}
-      <div className="absolute bottom-2.5 right-2.5 z-[400] text-[9px] text-zinc-500 bg-zinc-950/80 backdrop-blur-sm border border-zinc-900 px-2 py-0.5 rounded-md pointer-events-auto">
+      <div className="absolute bottom-2.5 right-2.5 z-10 text-[9px] text-zinc-500 bg-zinc-950/80 backdrop-blur-sm border border-zinc-900 px-2 py-0.5 rounded-md pointer-events-auto">
         &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer" className="hover:underline text-zinc-400">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer" className="hover:underline text-zinc-400">CARTO</a>
       </div>
 
       {/* REQUISITO 3: FICHA INFERIOR FLOTANTE (BOTTOM-SHEET) PARA USUARIOS AUTENTICADOS */}
       {sheetTrip && isAuthenticated && (
-        <div className="absolute bottom-0 inset-x-0 z-[500] p-3 animate-in slide-in-from-bottom-6 duration-200">
+        <div className="absolute bottom-0 inset-x-0 z-20 p-3 animate-in slide-in-from-bottom-6 duration-200">
           <div className="rounded-3xl border border-amber-500/50 bg-gradient-to-b from-zinc-900/95 via-zinc-950/95 to-zinc-950 p-4 shadow-2xl backdrop-blur-xl space-y-3">
             {/* Header: Foto / Iniciales, Nombre, Rating y Botón Cerrar */}
             <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">

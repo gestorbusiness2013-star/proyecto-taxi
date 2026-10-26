@@ -457,7 +457,7 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
 
       {/* 3. Modal simple con botón 'Reservar Asiento' */}
       {selectedTrip && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/90 backdrop-blur-md p-4 overflow-y-auto">
           <div className="w-full max-w-md rounded-2xl border border-zinc-700 bg-zinc-950 p-5 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-200">
             {/* Header */}
             <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
@@ -595,7 +595,7 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
 
       {/* 4. Pantalla/Modal de éxito con el 'Boleto Digital' */}
       {confirmedBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-in fade-in duration-300 overflow-y-auto">
           <div className="w-full max-w-sm rounded-3xl border border-amber-500/50 bg-gradient-to-b from-zinc-950 via-[#0B0F17] to-zinc-950 p-6 shadow-2xl text-center">
             {/* Header / Badge */}
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 ring-2 ring-emerald-500/40 mb-3 animate-bounce">
