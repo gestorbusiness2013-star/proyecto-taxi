@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import {
   Car,
@@ -17,6 +18,7 @@ import {
   Lock,
   LogIn,
   Sparkles,
+  Clock,
 } from 'lucide-react';
 import type { Trip, GeoLocation } from '@/lib/types';
 import { useAuth, DEMO_PASSENGER } from '@/lib/auth';
@@ -114,12 +116,18 @@ export default function LiveRouteMap({
   const markersGroupRef = useRef<any>(null);
   const polylinesGroupRef = useRef<any>(null);
 
+  // Estado para montar portales en document.body (evita cortes por overflow del mapa y superposición del navbar)
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Estado de viajes en tiempo real
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeRoute, setActiveRoute] = useState<string>(selectedRouteFilter);
 
-  // Ficha flotante (Bottom-sheet) del vehículo seleccionado (solo usuarios autenticados)
+  // Ficha flotante (Bottom-sheet) del vehículo seleccionado
   const [sheetTrip, setSheetTrip] = useState<Trip | null>(null);
 
   // Modal para solicitar login si usuario toca un vehículo sin sesión
@@ -376,15 +384,16 @@ export default function LiveRouteMap({
         const pingColor = isEnRuta ? 'bg-amber-400' : 'bg-sky-400';
 
         // Flightradar24 custom HTML DivIcon con vehículo Top-Down GPS orientado según rumbo (heading)
+        // Área táctil optimizada (64x68px) para que tocar el auto o el badge registre el clic de inmediato
         const iconHtml = `
-          <div class="relative flex items-center justify-center cursor-pointer group" style="width: 52px; height: 52px;">
+          <div class="relative flex flex-col items-center justify-center cursor-pointer group" style="width: 64px; height: 68px;">
             ${
               isEnRuta
-                ? `<div class="absolute inset-0 rounded-full ${pingColor} opacity-75 radar-ping" style="pointer-events: none;"></div>`
+                ? `<div class="absolute top-1 rounded-full ${pingColor} opacity-75 radar-ping" style="width: 44px; height: 44px; pointer-events: none;"></div>`
                 : ''
             }
             <div 
-              class="relative z-10 flex h-10 w-10 items-center justify-center rounded-full shadow-2xl border-2 transition-transform duration-300"
+              class="relative z-10 flex h-10 w-10 items-center justify-center rounded-full shadow-2xl border-2 transition-transform duration-300 pointer-events-auto"
               style="
                 background: #0B0F17; 
                 border-color: ${markerColor}; 
@@ -407,8 +416,8 @@ export default function LiveRouteMap({
               </svg>
             </div>
 
-            <!-- Etiqueta de chofer y puestos compacta y anti-colisión -->
-            <div class="driver-badge absolute -bottom-4 z-20 flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-black font-mono shadow-md border whitespace-nowrap pointer-events-none select-none max-w-[95px] truncate"
+            <!-- Etiqueta de chofer y puestos compacta y táctil -->
+            <div class="driver-badge mt-1 z-20 flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-black font-mono shadow-md border whitespace-nowrap select-none max-w-[100px] truncate pointer-events-auto"
               style="background: #0B0F17FA; border-color: ${markerColor}90; color: #FFFFFF;">
               <span style="color: ${markerColor};">●</span>
               <span class="truncate">${trip.driverName.split(' ')[0]}</span>
@@ -421,8 +430,8 @@ export default function LiveRouteMap({
         const customIcon = L.divIcon({
           html: iconHtml,
           className: 'flightradar-vehicle-marker',
-          iconSize: [52, 52],
-          iconAnchor: [26, 26],
+          iconSize: [64, 68],
+          iconAnchor: [32, 22],
         });
 
         // Anti-colisión: riseOnHover y zIndexOffset jerarquizado para evitar superposición agresiva
@@ -432,16 +441,10 @@ export default function LiveRouteMap({
           zIndexOffset: isEnRuta ? 1000 + idx * 5 : 500 + idx * 5,
         });
 
-        // REQUISITO 3: INTERACCIÓN Y AUTENTICACIÓN AL TOCAR UN VEHÍCULO
+        // REQUISITO: Al tocar un vehículo, abrir la ficha completa del chofer y centrar el mapa
         marker.on('click', () => {
-          if (!isAuthenticated) {
-            // Usuario no autenticado: abrir modal informativo o redirigir
-            setAuthPromptTrip(trip);
-          } else {
-            // Usuario autenticado: abrir bottom-sheet del viaje
-            setSheetTrip(trip);
-            map.panTo([coords.lat, coords.lng], { animate: true });
-          }
+          setSheetTrip(trip);
+          map.panTo([coords.lat, coords.lng], { animate: true });
         });
 
         marker.addTo(markersGroup);
@@ -469,9 +472,9 @@ export default function LiveRouteMap({
         &copy; <a href="https://www.esri.com" target="_blank" rel="noopener noreferrer" className="hover:underline text-zinc-400">Esri</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer" className="hover:underline text-zinc-400">OpenStreetMap</a>
       </div>
 
-      {/* REQUISITO 3: MODAL DE INICIO DE SESIÓN REQUERIDO AL TOCAR UN VEHÍCULO */}
-      {authPromptTrip && !isAuthenticated && (
-        <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/90 backdrop-blur-md p-4 overflow-y-auto animate-in fade-in duration-200">
+      {/* REQUISITO: MODAL DE INICIO DE SESIÓN REQUERIDO AL INTENTAR RESERVAR SIN SESIÓN */}
+      {authPromptTrip && !isAuthenticated && mounted && createPortal(
+        <div className="fixed inset-0 z-[100000] flex items-end sm:items-center justify-center bg-black/90 backdrop-blur-md p-4 overflow-y-auto animate-in fade-in duration-200">
           <div className="w-full max-w-sm rounded-3xl border border-amber-500/40 bg-gradient-to-b from-zinc-900 via-zinc-950 to-zinc-950 p-6 shadow-2xl text-center space-y-4">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 shadow-lg shadow-amber-500/10">
               <Lock className="h-7 w-7" />
@@ -485,7 +488,7 @@ export default function LiveRouteMap({
                 Inicia sesión para reservar
               </h3>
               <p className="text-xs text-zinc-400 leading-relaxed">
-                Debes ingresar a tu cuenta para ver la ficha detallada del conductor (<span className="text-zinc-200 font-semibold">{authPromptTrip.driverName}</span>), datos del auto y confirmar tu reserva de asiento.
+                Ingresa a tu cuenta para confirmar tu asiento en el vehículo de <span className="text-zinc-200 font-semibold">{authPromptTrip.driverName}</span> y obtener tu PIN de abordaje seguro.
               </p>
             </div>
 
@@ -525,13 +528,26 @@ export default function LiveRouteMap({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* REQUISITO 3: FICHA INFERIOR FLOTANTE (BOTTOM-SHEET) PARA USUARIOS AUTENTICADOS */}
-      {sheetTrip && isAuthenticated && (
-        <div className="absolute bottom-0 inset-x-0 z-20 p-3 animate-in slide-in-from-bottom-6 duration-200">
-          <div className="rounded-3xl border border-amber-500/50 bg-gradient-to-b from-zinc-900/95 via-zinc-950/95 to-zinc-950 p-4 shadow-2xl backdrop-blur-xl space-y-3">
+      {/* REQUISITO: FICHA INFERIOR FLOTANTE (BOTTOM-SHEET) DEL CONDUCTOR */}
+      {/* Montada mediante Portal sobre document.body: posición fija por encima de BottomNav (z-[99999]) y totalmente scrolleable */}
+      {sheetTrip && mounted && createPortal(
+        <div className="fixed inset-0 z-[99999] flex items-end justify-center pointer-events-none p-3 pb-[4.85rem] sm:pb-6">
+          {/* Fondo oscuro clicable para cerrar al tocar el mapa */}
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-[2px] pointer-events-auto transition-opacity"
+            onClick={() => setSheetTrip(null)}
+            aria-label="Cerrar ficha del chofer"
+          />
+
+          {/* Tarjeta Flotante del Chofer y Reserva */}
+          <div className="relative w-full max-w-md pointer-events-auto max-h-[82vh] overflow-y-auto rounded-3xl border border-amber-500/60 bg-gradient-to-b from-zinc-900/98 via-zinc-950/98 to-zinc-950 p-4 shadow-[0_-12px_40px_rgba(0,0,0,0.9),0_0_25px_rgba(245,158,11,0.25)] backdrop-blur-2xl space-y-3.5 animate-in slide-in-from-bottom-5 duration-200">
+            {/* Indicador táctil / Handle de arrastre superior */}
+            <div className="w-10 h-1 bg-zinc-700/80 rounded-full mx-auto -mt-1 mb-1" />
+
             {/* Header: Foto / Iniciales, Nombre, Rating y Botón Cerrar */}
             <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
               <div className="flex items-center gap-3">
@@ -568,12 +584,30 @@ export default function LiveRouteMap({
               </button>
             </div>
 
-            {/* Trayecto y Puestos */}
-            <div className="flex items-center justify-between py-1">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-extrabold text-white">{sheetTrip.origin}</span>
-                <ArrowRight className="h-3.5 w-3.5 text-zinc-500" />
-                <span className="text-sm font-extrabold text-white">{sheetTrip.destination}</span>
+            {/* Trayecto y Estado del Viaje */}
+            <div className="flex items-center justify-between py-2 px-3 bg-zinc-900/70 rounded-xl border border-zinc-800/70">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-black text-white">{sheetTrip.origin}</span>
+                  <ArrowRight className="h-3.5 w-3.5 text-amber-400" />
+                  <span className="text-sm font-black text-white">{sheetTrip.destination}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-[10px] text-zinc-400">
+                  {sheetTrip.status === 'in_route' ? (
+                    <span className="flex items-center gap-1 text-emerald-400 font-bold">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                      </span>
+                      <span>En carretera ahora mismo</span>
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-sky-400 font-semibold">
+                      <Clock className="h-3 w-3" />
+                      <span>Salida estimada: {new Date(sheetTrip.departureTime).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' })}</span>
+                    </span>
+                  )}
+                </div>
               </div>
 
               <span className="inline-flex items-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-black text-amber-400">
@@ -582,7 +616,7 @@ export default function LiveRouteMap({
               </span>
             </div>
 
-            {/* Tarifa y Botón "Reservar" */}
+            {/* Tarifa y Botón de Acción */}
             <div className="flex items-center justify-between pt-1">
               <div>
                 <div className="text-lg font-black text-white">
@@ -594,20 +628,41 @@ export default function LiveRouteMap({
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  onSelectTripToBook?.(sheetTrip);
-                  setSheetTrip(null);
-                }}
-                className="flex items-center gap-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 px-5 py-2.5 text-xs font-black text-zinc-950 shadow-lg shadow-amber-500/20 active:scale-95 transition"
-              >
-                <span>Reservar</span>
-                <ArrowRight className="h-3.5 w-3.5" />
-              </button>
+              {isAuthenticated ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onSelectTripToBook?.(sheetTrip);
+                    setSheetTrip(null);
+                  }}
+                  className="flex items-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-400 px-5 py-2.5 text-xs font-black text-zinc-950 shadow-lg shadow-amber-500/20 active:scale-95 transition"
+                >
+                  <span>Reservar Asiento</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthPromptTrip(sheetTrip);
+                    setSheetTrip(null);
+                  }}
+                  className="flex items-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-400 px-4 py-2.5 text-xs font-black text-zinc-950 shadow-lg shadow-amber-500/20 active:scale-95 transition"
+                >
+                  <Lock className="h-3.5 w-3.5" />
+                  <span>Ingresar para Reservar</span>
+                </button>
+              )}
             </div>
+
+            {!isAuthenticated && (
+              <p className="text-[10px] text-zinc-400 text-center pt-0.5">
+                Debes iniciar sesión para confirmar tu reserva y obtener tu PIN de abordaje seguro.
+              </p>
+            )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
