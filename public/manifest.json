@@ -3,6 +3,7 @@
   "short_name": "Proyecto Taxi",
   "description": "PWA de viajes compartidos e interurbanos en Venezuela. Rutas seguras entre Caracas, Valencia, Maracay, Barquisimeto y más.",
   "start_url": "/",
+  "scope": "/",
   "id": "/",
   "display": "standalone",
   "orientation": "portrait-primary",

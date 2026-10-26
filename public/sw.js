@@ -42,8 +42,20 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
 
-  // Avoid caching chrome extension or external analytical requests
-  if (!url.protocol.startsWith('http')) return;
+  // Only intercept same-origin requests (let external CDNs, tiles and Firebase pass natively)
+  if (url.origin !== self.location.origin) return;
+
+  // Never intercept Next.js Server Actions, RSC payloads, internal routing or API requests
+  if (
+    event.request.headers.has('next-action') ||
+    event.request.headers.has('rsc') ||
+    event.request.headers.has('next-router-state-tree') ||
+    event.request.headers.has('next-router-prefetch') ||
+    url.pathname.startsWith('/api/') ||
+    url.pathname.includes('/_next/data/')
+  ) {
+    return;
+  }
 
   event.respondWith(
     fetch(event.request)
