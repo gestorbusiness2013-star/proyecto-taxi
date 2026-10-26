@@ -31,6 +31,30 @@ const firebaseConfig = {
 
 let _db: Firestore | null = null;
 
+/** Indica si las variables de entorno de Firebase están definidas. */
+export function isFirebaseConfigured(): boolean {
+  return Boolean(firebaseConfig.projectId && firebaseConfig.apiKey);
+}
+
+/**
+ * Ejecuta la creación de un listener de forma segura: si Firebase no está
+ * configurado o falla la inicialización, notifica por onError y devuelve un
+ * unsubscribe vacío en lugar de lanzar (lo que tumbaría toda la app en producción).
+ */
+function safeListen(
+  create: () => Unsubscribe,
+  onError?: (error: Error) => void
+): Unsubscribe {
+  try {
+    return create();
+  } catch (err) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    console.warn('[db] Listener no iniciado:', error.message);
+    onError?.(error);
+    return () => {};
+  }
+}
+
 export function getDb(): Firestore {
   if (_db) return _db;
   if (!firebaseConfig.projectId || !firebaseConfig.apiKey) {
@@ -103,22 +127,24 @@ export function getLiveTrips(
   onData: (trips: Trip[]) => void,
   onError?: (error: Error) => void
 ): Unsubscribe {
-  const q = query(
-    collection(getDb(), COLLECTIONS.trips),
-    where('status', '==', status),
-    where('availableSeats', '>', 0)
-  );
+  return safeListen(() => {
+    const q = query(
+      collection(getDb(), COLLECTIONS.trips),
+      where('status', '==', status),
+      where('availableSeats', '>', 0)
+    );
 
-  return onSnapshot(
-    q,
-    (snap) => {
-      const trips = snap.docs
-        .map((d) => ({ ...(d.data() as Omit<Trip, 'id'>), id: d.id }))
-        .sort((a, b) => a.departureTime.localeCompare(b.departureTime));
-      onData(trips);
-    },
-    (err) => onError?.(err)
-  );
+    return onSnapshot(
+      q,
+      (snap) => {
+        const trips = snap.docs
+          .map((d) => ({ ...(d.data() as Omit<Trip, 'id'>), id: d.id }))
+          .sort((a, b) => a.departureTime.localeCompare(b.departureTime));
+        onData(trips);
+      },
+      (err) => onError?.(err)
+    );
+  }, onError);
 }
 
 // ---------------------------------------------------------------------------
@@ -337,21 +363,23 @@ export function getDriverTrips(
   onData: (trips: Trip[]) => void,
   onError?: (error: Error) => void
 ): Unsubscribe {
-  const q = query(
-    collection(getDb(), COLLECTIONS.trips),
-    where('driverId', '==', driverId)
-  );
+  return safeListen(() => {
+    const q = query(
+      collection(getDb(), COLLECTIONS.trips),
+      where('driverId', '==', driverId)
+    );
 
-  return onSnapshot(
-    q,
-    (snap) => {
-      const trips = snap.docs
-        .map((d) => ({ ...(d.data() as Omit<Trip, 'id'>), id: d.id }))
-        .sort((a, b) => b.departureTime.localeCompare(a.departureTime));
-      onData(trips);
-    },
-    (err) => onError?.(err)
-  );
+    return onSnapshot(
+      q,
+      (snap) => {
+        const trips = snap.docs
+          .map((d) => ({ ...(d.data() as Omit<Trip, 'id'>), id: d.id }))
+          .sort((a, b) => b.departureTime.localeCompare(a.departureTime));
+        onData(trips);
+      },
+      (err) => onError?.(err)
+    );
+  }, onError);
 }
 
 /**
@@ -362,21 +390,23 @@ export function getTripBookings(
   onData: (bookings: Booking[]) => void,
   onError?: (error: Error) => void
 ): Unsubscribe {
-  const q = query(
-    collection(getDb(), COLLECTIONS.bookings),
-    where('tripId', '==', tripId)
-  );
+  return safeListen(() => {
+    const q = query(
+      collection(getDb(), COLLECTIONS.bookings),
+      where('tripId', '==', tripId)
+    );
 
-  return onSnapshot(
-    q,
-    (snap) => {
-      const bookings = snap.docs
-        .map((d) => ({ ...(d.data() as Omit<Booking, 'id'>), id: d.id }))
-        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-      onData(bookings);
-    },
-    (err) => onError?.(err)
-  );
+    return onSnapshot(
+      q,
+      (snap) => {
+        const bookings = snap.docs
+          .map((d) => ({ ...(d.data() as Omit<Booking, 'id'>), id: d.id }))
+          .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+        onData(bookings);
+      },
+      (err) => onError?.(err)
+    );
+  }, onError);
 }
 
 // ---------------------------------------------------------------------------
@@ -407,21 +437,23 @@ export function getAllActiveTrips(
   onData: (trips: Trip[]) => void,
   onError?: (error: Error) => void
 ): Unsubscribe {
-  const q = query(
-    collection(getDb(), COLLECTIONS.trips),
-    where('availableSeats', '>', 0)
-  );
+  return safeListen(() => {
+    const q = query(
+      collection(getDb(), COLLECTIONS.trips),
+      where('availableSeats', '>', 0)
+    );
 
-  return onSnapshot(
-    q,
-    (snap) => {
-      const trips = snap.docs
-        .map((d) => ({ ...(d.data() as Omit<Trip, 'id'>), id: d.id }))
-        .filter((t) => t.status === 'scheduled' || t.status === 'in_route');
-      onData(trips);
-    },
-    (err) => onError?.(err)
-  );
+    return onSnapshot(
+      q,
+      (snap) => {
+        const trips = snap.docs
+          .map((d) => ({ ...(d.data() as Omit<Trip, 'id'>), id: d.id }))
+          .filter((t) => t.status === 'scheduled' || t.status === 'in_route');
+        onData(trips);
+      },
+      (err) => onError?.(err)
+    );
+  }, onError);
 }
 
 

@@ -161,6 +161,7 @@ export default function LiveRouteMap({
     let isMounted = true;
 
     async function initMap() {
+      if (typeof window === 'undefined') return;
       if (!mapContainerRef.current || leafletMapRef.current) return;
 
       const L = (await import('leaflet')).default;

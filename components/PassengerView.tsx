@@ -22,9 +22,19 @@ import {
   ArrowUpDown,
   Navigation,
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import type { Trip, Booking } from '@/lib/types';
 import { getLiveTrips, bookSeats } from '@/lib/db';
-import LiveRouteMap from '@/components/LiveRouteMap';
+
+// Leaflet depende de `window`: se carga solo en el cliente (sin SSR)
+const LiveRouteMap = dynamic(() => import('@/components/LiveRouteMap'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full min-h-[400px] flex items-center justify-center rounded-3xl border border-zinc-800 bg-zinc-950 text-amber-500 font-mono text-sm">
+      Cargando mapa en vivo...
+    </div>
+  ),
+});
 
 export const VENEZUELA_CITIES = [
   'Caracas',
