@@ -21,27 +21,28 @@
   background-color: #080B10 !important;
 }
 
-/* Custom dark zoom controls for Leaflet */
-.leaflet-control-zoom {
-  border: 1px solid #273549 !important;
-  background-color: #0B0F17 !important;
-  border-radius: 12px !important;
-  overflow: hidden;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.6) !important;
-  margin-bottom: 38px !important;
-  margin-right: 12px !important;
+/* Smooth layering for vehicle markers and badges to prevent aggressive overlap */
+.flightradar-vehicle-marker {
+  transition: transform 0.2s ease, z-index 0.2s ease;
 }
 
-.leaflet-control-zoom a {
-  background-color: #0B0F17 !important;
-  color: #F9FAFB !important;
-  border-bottom: 1px solid #273549 !important;
-  transition: all 0.15s ease;
+.flightradar-vehicle-marker:hover,
+.flightradar-vehicle-marker:focus,
+.flightradar-vehicle-marker:active {
+  z-index: 99999 !important;
 }
 
-.leaflet-control-zoom a:hover {
-  background-color: #18202F !important;
-  color: #F59E0B !important;
+.flightradar-vehicle-marker .driver-badge {
+  opacity: 0.95;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+.flightradar-vehicle-marker:hover .driver-badge {
+  opacity: 1;
+  transform: scale(1.08);
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.5);
+  z-index: 100000 !important;
 }
 
 .neon-route-arc {

@@ -15,14 +15,18 @@ import {
   Navigation,
   RefreshCw,
   Lock,
+  LogIn,
+  Sparkles,
 } from 'lucide-react';
 import type { Trip, GeoLocation } from '@/lib/types';
-import { useAuth } from '@/lib/auth';
+import { useAuth, DEMO_PASSENGER } from '@/lib/auth';
 import { getAllActiveTrips } from '@/lib/db';
 
 interface LiveRouteMapProps {
   onSelectTripToBook?: (trip: Trip) => void;
-  selectedRouteFilter?: string; // e.g. 'all' | 'caracas-valencia' | 'puerto-ordaz-caracas' | 'caracas-maturin'
+  selectedRouteFilter?: string; // e.g. 'all' | 'caracas-valencia' | 'puerto-ordaz-caracas' | 'caracas-barquisimeto'
+  originFilter?: string;
+  destinationFilter?: string;
   onFilterChange?: (filter: string) => void;
 }
 
@@ -98,10 +102,12 @@ function getPointAlongPolyline(
 export default function LiveRouteMap({
   onSelectTripToBook,
   selectedRouteFilter = 'all',
+  originFilter = 'all',
+  destinationFilter = 'all',
   onFilterChange,
 }: LiveRouteMapProps) {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, login } = useAuth();
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const leafletMapRef = useRef<any>(null);
@@ -115,6 +121,9 @@ export default function LiveRouteMap({
 
   // Ficha flotante (Bottom-sheet) del vehículo seleccionado (solo usuarios autenticados)
   const [sheetTrip, setSheetTrip] = useState<Trip | null>(null);
+
+  // Modal para solicitar login si usuario toca un vehículo sin sesión
+  const [authPromptTrip, setAuthPromptTrip] = useState<Trip | null>(null);
 
   // Escuchar viajes activos de Firestore
   useEffect(() => {
@@ -150,8 +159,7 @@ export default function LiveRouteMap({
 
       if (!isMounted || !mapContainerRef.current) return;
 
-      // 2. Encuadre y Zoom predeterminado: tramo central de la ARC (10.25, -67.45)
-      // Nivel de zoom 9 adecuado para móvil para encuadrar Caracas, Maracay y Valencia claramente
+      // 1. Encuadre inicial y configuración limpia (zoomControl: false para dejar mapa despejado)
       const map = L.map(mapContainerRef.current, {
         center: [10.25, -67.45],
         zoom: 9,
@@ -161,13 +169,6 @@ export default function LiveRouteMap({
         zoomControl: false,
         attributionControl: false,
       });
-
-      // Añadir control de zoom personalizado en esquina inferior derecha para no solapar filtros
-      L.control
-        .zoom({
-          position: 'bottomright',
-        })
-        .addTo(map);
 
       // 1. Capa de mapa base: Esri World Dark Gray Canvas (100% libre sin API key ni marcas de agua)
       L.tileLayer(
@@ -216,21 +217,33 @@ export default function LiveRouteMap({
     import('leaflet').then(({ default: L }) => {
       polylinesGroup.clearLayers();
 
+      const orig = (originFilter || 'all').toLowerCase();
+      const dest = (destinationFilter || 'all').toLowerCase();
+
       const shouldShowArc =
         activeRoute === 'all' ||
         activeRoute === 'caracas-valencia' ||
-        activeRoute.includes('valencia');
+        activeRoute.includes('valencia') ||
+        (orig.includes('caracas') && dest.includes('valencia')) ||
+        (orig.includes('valencia') && dest.includes('caracas')) ||
+        (orig === 'all' && (dest.includes('valencia') || dest.includes('caracas'))) ||
+        (dest === 'all' && (orig.includes('valencia') || orig.includes('caracas')));
 
       const shouldShowOriente =
         activeRoute === 'all' ||
         activeRoute === 'puerto-ordaz-caracas' ||
         activeRoute.includes('ordaz') ||
-        activeRoute.includes('caracas-maturin');
+        orig.includes('ordaz') ||
+        dest.includes('ordaz') ||
+        orig.includes('maturin') ||
+        dest.includes('maturin');
 
       const shouldShowOccidente =
         activeRoute === 'all' ||
-        activeRoute === 'valencia-barquisimeto' ||
-        activeRoute.includes('barquisimeto');
+        activeRoute === 'caracas-barquisimeto' ||
+        activeRoute.includes('barquisimeto') ||
+        orig.includes('barquisimeto') ||
+        dest.includes('barquisimeto');
 
       // 3. Trazado de ruta (ARC Caracas -> Valencia)
       if (shouldShowArc) {
@@ -254,7 +267,6 @@ export default function LiveRouteMap({
 
       // Trazado de Oriente (Troncal 9 y 16)
       if (shouldShowOriente) {
-        // Halo exterior verde esmeralda
         L.polyline(ORIENTE_HIGHWAY_COORDS, {
           color: '#10B981',
           weight: 6,
@@ -281,22 +293,27 @@ export default function LiveRouteMap({
         }).addTo(polylinesGroup);
       }
 
-      // 2. Ajuste de zoom al tramo filtrado
-      if (activeRoute === 'caracas-valencia' || activeRoute.includes('valencia')) {
-        // Bounds específicos de la ARC (Caracas a Valencia)
+      // Ajuste de zoom al tramo filtrado
+      if (
+        activeRoute === 'caracas-valencia' ||
+        (orig.includes('caracas') && dest.includes('valencia')) ||
+        (orig.includes('valencia') && dest.includes('caracas'))
+      ) {
         const arcBounds = L.latLngBounds(ARC_HIGHWAY_COORDS);
         map.fitBounds(arcBounds, { padding: [40, 40], maxZoom: 11, animate: true });
-      } else if (activeRoute === 'puerto-ordaz-caracas') {
+      } else if (activeRoute === 'puerto-ordaz-caracas' || orig.includes('ordaz') || dest.includes('ordaz')) {
         const orienteBounds = L.latLngBounds(ORIENTE_HIGHWAY_COORDS);
         map.fitBounds(orienteBounds, { padding: [30, 30], maxZoom: 9, animate: true });
-      } else if (activeRoute === 'all') {
-        // Encuadre predeterminado en el tramo central de la ARC (Caracas, Maracay, Valencia)
+      } else if (activeRoute === 'caracas-barquisimeto' || orig.includes('barquisimeto') || dest.includes('barquisimeto')) {
+        const bqtoBounds = L.latLngBounds(BARQUISIMETO_HIGHWAY_COORDS);
+        map.fitBounds(bqtoBounds, { padding: [30, 30], maxZoom: 10, animate: true });
+      } else if (activeRoute === 'all' && orig === 'all' && dest === 'all') {
         map.setView([10.25, -67.45], 9, { animate: true });
       }
     });
-  }, [activeRoute]);
+  }, [activeRoute, originFilter, destinationFilter]);
 
-  // Actualizar marcadores de vehículos ('in_route' o 'scheduled') con rotación y radar
+  // Actualizar marcadores de vehículos ('in_route' o 'scheduled') con rotación, radar y anti-colisión
   useEffect(() => {
     const map = leafletMapRef.current;
     const markersGroup = markersGroupRef.current;
@@ -305,13 +322,32 @@ export default function LiveRouteMap({
     import('leaflet').then(({ default: L }) => {
       markersGroup.clearLayers();
 
+      const orig = (originFilter || 'all').toLowerCase();
+      const dest = (destinationFilter || 'all').toLowerCase();
+
       trips.forEach((trip, idx) => {
-        // Filtrar según ruta activa si está seleccionada
-        if (activeRoute === 'caracas-valencia' && !trip.destination.toLowerCase().includes('valencia') && !trip.origin.toLowerCase().includes('valencia')) {
-          return;
+        // Filtrar por origen
+        if (orig !== 'all' && orig !== 'todas') {
+          if (!trip.origin.toLowerCase().includes(orig)) return;
         }
-        if (activeRoute === 'puerto-ordaz-caracas' && !trip.origin.toLowerCase().includes('ordaz') && !trip.destination.toLowerCase().includes('ordaz')) {
-          return;
+
+        // Filtrar por destino
+        if (dest !== 'all' && dest !== 'todas') {
+          if (!trip.destination.toLowerCase().includes(dest)) return;
+        }
+
+        // Filtrar según ruta rápida
+        if (activeRoute === 'caracas-valencia') {
+          const match =
+            (trip.destination.toLowerCase().includes('valencia') || trip.origin.toLowerCase().includes('valencia')) &&
+            (trip.origin.toLowerCase().includes('caracas') || trip.destination.toLowerCase().includes('caracas'));
+          if (!match) return;
+        } else if (activeRoute === 'puerto-ordaz-caracas') {
+          const match = trip.origin.toLowerCase().includes('ordaz') || trip.destination.toLowerCase().includes('ordaz');
+          if (!match) return;
+        } else if (activeRoute === 'caracas-barquisimeto') {
+          const match = trip.origin.toLowerCase().includes('barquisimeto') || trip.destination.toLowerCase().includes('barquisimeto');
+          if (!match) return;
         }
 
         // Obtener o simular ubicación a lo largo del corredor correspondiente
@@ -358,31 +394,24 @@ export default function LiveRouteMap({
             >
               <!-- Ícono de vehículo visto desde arriba (Top-Down GPS) apuntando hacia el norte (0°) -->
               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none">
-                <!-- Chasis / Carrocería del auto -->
                 <path d="M7 5.5C7 3.5 8.5 2 11 2H13C15.5 2 17 3.5 17 5.5V18.5C17 20.5 15.5 22 13 22H11C8.5 22 7 20.5 7 18.5V5.5Z" fill="${markerColor}" />
-                <!-- Parabrisas delantero (oscuro) -->
                 <path d="M8.5 7C8.5 6.2 9.2 5.5 10 5.5H14C14.8 5.5 15.5 6.2 15.5 7V9.5H8.5V7Z" fill="#0B0F17" />
-                <!-- Techo / Cabina -->
                 <rect x="9" y="10.5" width="6" height="4" rx="0.5" fill="${markerColor}" opacity="0.8" />
-                <!-- Vidrio trasero -->
                 <path d="M8.5 16H15.5V17.5C15.5 18 15 18.5 14.5 18.5H9.5C9 18.5 8.5 18 8.5 17.5V16Z" fill="#0B0F17" />
-                <!-- Faros delanteros brillantes en amarillo -->
                 <circle cx="9" cy="3.2" r="1.2" fill="#FEF08A" />
                 <circle cx="15" cy="3.2" r="1.2" fill="#FEF08A" />
-                <!-- Luces de freno rojas traseras -->
                 <rect x="8.5" y="21" width="2" height="0.8" rx="0.3" fill="#EF4444" />
                 <rect x="13.5" y="21" width="2" height="0.8" rx="0.3" fill="#EF4444" />
-                <!-- Espejos retrovisores laterales -->
                 <rect x="5.5" y="7" width="1.5" height="2.5" rx="0.5" fill="${markerColor}" />
                 <rect x="17" y="7" width="1.5" height="2.5" rx="0.5" fill="${markerColor}" />
               </svg>
             </div>
 
-            <!-- Etiqueta de chofer y puestos flotante -->
-            <div class="absolute -bottom-4 z-20 flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-black font-mono shadow-md border whitespace-nowrap pointer-events-none select-none"
+            <!-- Etiqueta de chofer y puestos compacta y anti-colisión -->
+            <div class="driver-badge absolute -bottom-4 z-20 flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-black font-mono shadow-md border whitespace-nowrap pointer-events-none select-none max-w-[95px] truncate"
               style="background: #0B0F17FA; border-color: ${markerColor}90; color: #FFFFFF;">
               <span style="color: ${markerColor};">●</span>
-              <span>${trip.driverName.split(' ')[0]}</span>
+              <span class="truncate">${trip.driverName.split(' ')[0]}</span>
               <span style="color: ${markerColor}AA;">•</span>
               <span style="color: ${markerColor}; font-weight: 800;">${trip.availableSeats}p</span>
             </div>
@@ -396,17 +425,20 @@ export default function LiveRouteMap({
           iconAnchor: [26, 26],
         });
 
-        const marker = L.marker([coords.lat, coords.lng], { icon: customIcon });
+        // Anti-colisión: riseOnHover y zIndexOffset jerarquizado para evitar superposición agresiva
+        const marker = L.marker([coords.lat, coords.lng], {
+          icon: customIcon,
+          riseOnHover: true,
+          zIndexOffset: isEnRuta ? 1000 + idx * 5 : 500 + idx * 5,
+        });
 
-        // REQUISITO 3: INTERCEPTACIÓN Y PROTECCIÓN DE ACCESO AL TOCAR UN VEHÍCULO
+        // REQUISITO 3: INTERACCIÓN Y AUTENTICACIÓN AL TOCAR UN VEHÍCULO
         marker.on('click', () => {
           if (!isAuthenticated) {
-            // Usuario NO autenticado: Redirigir de inmediato al login con el mensaje requerido
-            const redirectUrl = `/?tripId=${trip.id}`;
-            const message = 'Inicia sesión para ver los detalles del vehículo y conductor';
-            router.push(`/login?redirect=${encodeURIComponent(redirectUrl)}&message=${encodeURIComponent(message)}`);
+            // Usuario no autenticado: abrir modal informativo o redirigir
+            setAuthPromptTrip(trip);
           } else {
-            // Usuario SÍ autenticado: Desplegar la ficha flotante (bottom-sheet)
+            // Usuario autenticado: abrir bottom-sheet del viaje
             setSheetTrip(trip);
             map.panTo([coords.lat, coords.lng], { animate: true });
           }
@@ -415,58 +447,11 @@ export default function LiveRouteMap({
         marker.addTo(markersGroup);
       });
     });
-  }, [trips, activeRoute, isAuthenticated, router]);
-
-  const handleFilterClick = (filterKey: string) => {
-    setActiveRoute(filterKey);
-    onFilterChange?.(filterKey);
-  };
+  }, [trips, activeRoute, originFilter, destinationFilter, isAuthenticated, router]);
 
   return (
-    <div className="relative w-full h-[calc(100vh-12.5rem)] min-h-[460px] rounded-3xl overflow-hidden border border-zinc-800 bg-[#080B10] shadow-2xl flex flex-col">
-      {/* Barra de Filtros Flotante de Corredores Viales */}
-      <div className="absolute top-3 left-3 right-3 z-10 flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-        <button
-          type="button"
-          onClick={() => handleFilterClick('all')}
-          className={`shrink-0 rounded-xl px-3 py-1.5 text-xs font-bold backdrop-blur-md border transition ${
-            activeRoute === 'all'
-              ? 'bg-amber-500 text-zinc-950 border-amber-400 shadow-lg shadow-amber-500/20'
-              : 'bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white'
-          }`}
-        >
-          Todas las Rutas
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleFilterClick('caracas-valencia')}
-          className={`shrink-0 flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold backdrop-blur-md border transition ${
-            activeRoute === 'caracas-valencia'
-              ? 'bg-amber-500 text-zinc-950 border-amber-400 shadow-lg shadow-amber-500/20'
-              : 'bg-zinc-950/80 text-amber-400 border-amber-500/30 hover:border-amber-500/60'
-          }`}
-        >
-          <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse"></span>
-          <span>ARC (Caracas ➔ Valencia)</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleFilterClick('puerto-ordaz-caracas')}
-          className={`shrink-0 flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold backdrop-blur-md border transition ${
-            activeRoute === 'puerto-ordaz-caracas'
-              ? 'bg-emerald-500 text-zinc-950 border-emerald-400 shadow-lg shadow-emerald-500/20'
-              : 'bg-zinc-950/80 text-emerald-400 border-emerald-500/30 hover:border-emerald-500/60'
-          }`}
-        >
-          <span className="h-2 w-2 rounded-full bg-emerald-400"></span>
-          <span>Oriente (Pto. Ordaz ➔ CCS)</span>
-        </button>
-
-      </div>
-
-      {/* Contenedor Leaflet */}
+    <div className="relative w-full h-[calc(100vh-16rem)] min-h-[460px] rounded-3xl overflow-hidden border border-zinc-800 bg-[#080B10] shadow-2xl flex flex-col">
+      {/* Contenedor Leaflet (Completamente despejado sin zoom buttons ni chips flotantes) */}
       <div ref={mapContainerRef} className="w-full h-full z-0 bg-[#080B10]" />
 
       {/* Badge Flotante Inferior de Estado en Vivo estilo Flightradar */}
@@ -483,6 +468,65 @@ export default function LiveRouteMap({
       <div className="absolute bottom-2.5 right-2.5 z-10 text-[9px] text-zinc-500 bg-zinc-950/80 backdrop-blur-sm border border-zinc-900 px-2 py-0.5 rounded-md pointer-events-auto">
         &copy; <a href="https://www.esri.com" target="_blank" rel="noopener noreferrer" className="hover:underline text-zinc-400">Esri</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer" className="hover:underline text-zinc-400">OpenStreetMap</a>
       </div>
+
+      {/* REQUISITO 3: MODAL DE INICIO DE SESIÓN REQUERIDO AL TOCAR UN VEHÍCULO */}
+      {authPromptTrip && !isAuthenticated && (
+        <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/90 backdrop-blur-md p-4 overflow-y-auto animate-in fade-in duration-200">
+          <div className="w-full max-w-sm rounded-3xl border border-amber-500/40 bg-gradient-to-b from-zinc-900 via-zinc-950 to-zinc-950 p-6 shadow-2xl text-center space-y-4">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 shadow-lg shadow-amber-500/10">
+              <Lock className="h-7 w-7" />
+            </div>
+
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400">
+                {authPromptTrip.origin} ➔ {authPromptTrip.destination}
+              </span>
+              <h3 className="text-lg font-black text-white">
+                Inicia sesión para reservar
+              </h3>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Debes ingresar a tu cuenta para ver la ficha detallada del conductor (<span className="text-zinc-200 font-semibold">{authPromptTrip.driverName}</span>), datos del auto y confirmar tu reserva de asiento.
+              </p>
+            </div>
+
+            <div className="space-y-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const redirectUrl = `/?tripId=${authPromptTrip.id}`;
+                  const msg = 'Debes ingresar para ver la ficha del viaje y reservar';
+                  router.push(`/login?redirect=${encodeURIComponent(redirectUrl)}&message=${encodeURIComponent(msg)}`);
+                }}
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-400 py-3 text-xs font-black text-zinc-950 shadow-lg shadow-amber-500/20 active:scale-95 transition"
+              >
+                <LogIn className="h-4 w-4" />
+                <span>Ingresar a mi cuenta</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  login(DEMO_PASSENGER);
+                  setSheetTrip(authPromptTrip);
+                  setAuthPromptTrip(null);
+                }}
+                className="w-full flex items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/80 hover:bg-zinc-800 py-2.5 text-xs font-bold text-zinc-300 transition"
+              >
+                <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+                <span>Acceso Rápido Demo (1-Click)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setAuthPromptTrip(null)}
+                className="w-full py-2 text-xs font-semibold text-zinc-500 hover:text-zinc-300 transition"
+              >
+                Continuar explorando mapa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* REQUISITO 3: FICHA INFERIOR FLOTANTE (BOTTOM-SHEET) PARA USUARIOS AUTENTICADOS */}
       {sheetTrip && isAuthenticated && (

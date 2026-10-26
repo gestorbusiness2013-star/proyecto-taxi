@@ -18,10 +18,31 @@ import {
   Sparkles,
   List,
   Map,
+  ChevronDown,
+  ArrowUpDown,
+  Navigation,
 } from 'lucide-react';
 import type { Trip, Booking } from '@/lib/types';
 import { getLiveTrips, bookSeats } from '@/lib/db';
 import LiveRouteMap from '@/components/LiveRouteMap';
+
+export const VENEZUELA_CITIES = [
+  'Caracas',
+  'Valencia',
+  'Maracay',
+  'Barquisimeto',
+  'Maracaibo',
+  'Puerto La Cruz',
+  'Puerto Ordaz',
+  'San Félix',
+  'Maturín',
+  'Ciudad Bolívar',
+  'El Tigre',
+  'San Juan de los Morros',
+  'Barinas',
+  'Mérida',
+  'San Cristóbal',
+];
 
 type PassengerTopTab = 'scheduled' | 'in_route';
 type ViewMode = 'list' | 'map';
@@ -89,7 +110,76 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
     };
   }, []);
 
-  const displayedTrips = activeTab === 'scheduled' ? scheduledTrips : inRouteTrips;
+  // Estados para selectores de ciudad y chips rápidos de corredor
+  const [originCity, setOriginCity] = useState<string>('all');
+  const [destinationCity, setDestinationCity] = useState<string>('all');
+  const [quickRoute, setQuickRoute] = useState<string>('all');
+
+  const handleOriginChange = (city: string) => {
+    setOriginCity(city);
+    setQuickRoute('custom');
+  };
+
+  const handleDestinationChange = (city: string) => {
+    setDestinationCity(city);
+    setQuickRoute('custom');
+  };
+
+  const handleSwapCities = () => {
+    const temp = originCity;
+    setOriginCity(destinationCity);
+    setDestinationCity(temp);
+    setQuickRoute('custom');
+  };
+
+  const handleQuickChip = (chipKey: string) => {
+    setQuickRoute(chipKey);
+    if (chipKey === 'all') {
+      setOriginCity('all');
+      setDestinationCity('all');
+    } else if (chipKey === 'caracas-valencia') {
+      setOriginCity('Caracas');
+      setDestinationCity('Valencia');
+    } else if (chipKey === 'puerto-ordaz-caracas') {
+      setOriginCity('Puerto Ordaz');
+      setDestinationCity('Caracas');
+    } else if (chipKey === 'caracas-barquisimeto') {
+      setOriginCity('Caracas');
+      setDestinationCity('Barquisimeto');
+    }
+  };
+
+  const currentTabTrips = activeTab === 'scheduled' ? scheduledTrips : inRouteTrips;
+  const displayedTrips = currentTabTrips.filter((trip) => {
+    // Filtro rápido de ruta
+    if (quickRoute === 'caracas-valencia') {
+      const matchArc =
+        (trip.origin.toLowerCase().includes('caracas') || trip.destination.toLowerCase().includes('caracas')) &&
+        (trip.origin.toLowerCase().includes('valencia') || trip.destination.toLowerCase().includes('valencia'));
+      if (!matchArc) return false;
+    } else if (quickRoute === 'puerto-ordaz-caracas') {
+      const matchOriente =
+        trip.origin.toLowerCase().includes('ordaz') || trip.destination.toLowerCase().includes('ordaz');
+      if (!matchOriente) return false;
+    } else if (quickRoute === 'caracas-barquisimeto') {
+      const matchBqto =
+        trip.origin.toLowerCase().includes('barquisimeto') || trip.destination.toLowerCase().includes('barquisimeto');
+      if (!matchBqto) return false;
+    }
+
+    // Filtro de Origen
+    if (originCity !== 'all') {
+      if (!trip.origin.toLowerCase().includes(originCity.toLowerCase())) return false;
+    }
+
+    // Filtro de Destino
+    if (destinationCity !== 'all') {
+      if (!trip.destination.toLowerCase().includes(destinationCity.toLowerCase())) return false;
+    }
+
+    return true;
+  });
+
   const isLoading = activeTab === 'scheduled' ? loadingScheduled : loadingInRoute;
 
   // 1. Selector de vista (View Toggle): 'Lista' vs 'Mapa en vivo'
@@ -227,6 +317,117 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
           </div>
         </div>
 
+        {/* 2. Barra de Selectores de Ciudad (Origen y Destino) */}
+        <div className="pt-0.5">
+          <div className="flex items-center gap-2">
+            {/* Selector Origen */}
+            <div className="flex-1 relative">
+              <div className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none flex items-center text-emerald-400">
+                <MapPin className="h-3.5 w-3.5" />
+              </div>
+              <select
+                aria-label="Filtrar por ciudad de origen"
+                value={originCity}
+                onChange={(e) => handleOriginChange(e.target.value)}
+                className="w-full appearance-none rounded-xl border border-zinc-800 bg-zinc-900/90 py-1.5 pl-7 pr-6 text-xs font-semibold text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/50 shadow-inner cursor-pointer"
+              >
+                <option value="all">Origen: Todos</option>
+                {VENEZUELA_CITIES.map((c) => (
+                  <option key={c} value={c} className="bg-zinc-950 text-white">
+                    {c}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
+            </div>
+
+            {/* Botón Swap / Invertir origen y destino */}
+            <button
+              type="button"
+              onClick={handleSwapCities}
+              title="Invertir origen y destino"
+              className="shrink-0 flex h-7 w-7 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-amber-400 hover:border-amber-500/40 transition active:scale-95"
+            >
+              <ArrowUpDown className="h-3 w-3" />
+            </button>
+
+            {/* Selector Destino */}
+            <div className="flex-1 relative">
+              <div className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none flex items-center text-amber-400">
+                <Navigation className="h-3.5 w-3.5" />
+              </div>
+              <select
+                aria-label="Filtrar por ciudad de destino"
+                value={destinationCity}
+                onChange={(e) => handleDestinationChange(e.target.value)}
+                className="w-full appearance-none rounded-xl border border-zinc-800 bg-zinc-900/90 py-1.5 pl-7 pr-6 text-xs font-semibold text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/50 shadow-inner cursor-pointer"
+              >
+                <option value="all">Destino: Todos</option>
+                {VENEZUELA_CITIES.map((c) => (
+                  <option key={c} value={c} className="bg-zinc-950 text-white">
+                    {c}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
+            </div>
+          </div>
+        </div>
+
+        {/* 3. Chips Rápidos de Corredores Viales (Accesos Directos) */}
+        <div className="flex gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
+          <button
+            type="button"
+            onClick={() => handleQuickChip('all')}
+            className={`shrink-0 rounded-xl px-2.5 py-1 text-[11px] font-bold border transition ${
+              quickRoute === 'all' && originCity === 'all' && destinationCity === 'all'
+                ? 'bg-amber-500 text-zinc-950 border-amber-400 shadow-sm shadow-amber-500/20'
+                : 'bg-zinc-900/80 text-zinc-400 border-zinc-800 hover:text-white hover:border-zinc-700'
+            }`}
+          >
+            Todas las Rutas
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleQuickChip('caracas-valencia')}
+            className={`shrink-0 flex items-center gap-1.5 rounded-xl px-2.5 py-1 text-[11px] font-bold border transition ${
+              quickRoute === 'caracas-valencia'
+                ? 'bg-amber-500 text-zinc-950 border-amber-400 shadow-sm shadow-amber-500/20'
+                : 'bg-zinc-900/80 text-amber-400 border-amber-500/30 hover:border-amber-500/60'
+            }`}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+            <span>ARC (Caracas ➔ Valencia)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleQuickChip('puerto-ordaz-caracas')}
+            className={`shrink-0 flex items-center gap-1.5 rounded-xl px-2.5 py-1 text-[11px] font-bold border transition ${
+              quickRoute === 'puerto-ordaz-caracas'
+                ? 'bg-emerald-500 text-zinc-950 border-emerald-400 shadow-sm shadow-emerald-500/20'
+                : 'bg-zinc-900/80 text-emerald-400 border-emerald-500/30 hover:border-emerald-500/60'
+            }`}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            <span>Oriente (Pto. Ordaz ➔ CCS)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleQuickChip('caracas-barquisimeto')}
+            className={`shrink-0 flex items-center gap-1.5 rounded-xl px-2.5 py-1 text-[11px] font-bold border transition ${
+              quickRoute === 'caracas-barquisimeto'
+                ? 'bg-sky-500 text-zinc-950 border-sky-400 shadow-sm shadow-sky-500/20'
+                : 'bg-zinc-900/80 text-sky-400 border-sky-500/30 hover:border-sky-500/60'
+            }`}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
+            <span>Centro-Occidente (CCS ➔ Bqto)</span>
+          </button>
+        </div>
+
         {/* Pestañas 'Próximas Salidas' / 'En Carretera' solo en modo Lista */}
         {viewMode === 'list' && (
           <div className="flex rounded-2xl border border-zinc-800 bg-zinc-950 p-1.5 shadow-lg">
@@ -284,7 +485,13 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
 
       {/* Renderizado condicional según modo de visualización */}
       {viewMode === 'map' ? (
-        <LiveRouteMap onSelectTripToBook={(trip) => handleOpenBooking(trip)} />
+        <LiveRouteMap
+          onSelectTripToBook={(trip) => handleOpenBooking(trip)}
+          originFilter={originCity}
+          destinationFilter={destinationCity}
+          selectedRouteFilter={quickRoute}
+          onFilterChange={(newRoute) => setQuickRoute(newRoute)}
+        />
       ) : (
         <>
           {/* Sync Status Banner */}
