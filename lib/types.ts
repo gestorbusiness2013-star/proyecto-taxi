@@ -25,6 +25,14 @@ export interface User {
 
 export type TripStatus = 'scheduled' | 'in_route' | 'completed' | 'cancelled';
 
+export interface GeoLocation {
+  lat: number;
+  lng: number;
+  heading?: number; // 0-360 degrees
+  speed?: number; // km/h
+  updatedAt?: string;
+}
+
 export interface Trip {
   id: string;
   driverId: string;
@@ -32,6 +40,7 @@ export interface Trip {
   driverPhone: string;
   vehiclePlate: string;
   vehicleModel?: string;
+  driverRating?: number;
   origin: string;
   destination: string;
   /** Fecha/hora de salida en ISO 8601 */
@@ -41,6 +50,8 @@ export interface Trip {
   /** Precio por asiento en USD */
   pricePerSeat: number;
   status: TripStatus;
+  /** Coordenadas y rumbo en tiempo real (estilo Flightradar24) */
+  currentLocation?: GeoLocation;
 }
 
 export type BookingStatus = 'confirmed' | 'boarded' | 'cancelled';

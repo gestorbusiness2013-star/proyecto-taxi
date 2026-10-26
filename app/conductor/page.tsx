@@ -23,6 +23,8 @@ import {
   Sparkles,
   ChevronRight,
   ShieldAlert,
+  Navigation,
+  Compass,
 } from 'lucide-react';
 import type { User, Trip, Booking, TripStatus } from '@/lib/types';
 import {
@@ -32,6 +34,7 @@ import {
   updateTripStatus,
   validateBoardingPin,
 } from '@/lib/db';
+import { useDriverLocation } from '@/hooks/useDriverLocation';
 
 const DRIVER_USER: User = {
   id: 'driver-alejandro-1',
@@ -141,6 +144,17 @@ export default function ConductorPage() {
   }, [selectedTripId]);
 
   const activeTrip = driverTrips.find((t) => t.id === selectedTripId) || driverTrips[0];
+
+  // Geolocalización activa del conductor (Requisito 4): transmite coords en tiempo real a Firestore
+  const isTripInRoute = activeTrip?.status === 'in_route';
+  const {
+    currentLocation: driverLiveLocation,
+    isTracking: isGpsTracking,
+    error: gpsError,
+  } = useDriverLocation({
+    tripId: activeTrip?.id,
+    enabled: isTripInRoute,
+  });
 
   // -------------------------------------------------------------------------
   // Handlers
@@ -639,6 +653,32 @@ export default function ConductorPage() {
                       <p className="text-[11px] font-semibold text-emerald-400 text-center pt-1">
                         {statusMessage}
                       </p>
+                    )}
+
+                    {/* Transmisión GPS en Vivo (Requisito 4) */}
+                    {isTripInRoute && (
+                      <div className="mt-2.5 rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-2.5 flex items-center justify-between text-xs animate-in fade-in">
+                        <div className="flex items-center gap-2">
+                          <span className="relative flex h-2.5 w-2.5">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                          </span>
+                          <div>
+                            <p className="font-bold text-emerald-400 flex items-center gap-1">
+                              <Navigation className="h-3.5 w-3.5" />
+                              <span>GPS en Carretera Transmitiendo</span>
+                            </p>
+                            <p className="text-[10px] text-zinc-400 font-mono mt-0.5">
+                              {driverLiveLocation
+                                ? `Rumbo: ${driverLiveLocation.heading ?? 0}° • ${driverLiveLocation.speed ? `${driverLiveLocation.speed} km/h` : 'En ruta'}`
+                                : 'Sincronizando satélites GPS...'}
+                            </p>
+                          </div>
+                        </div>
+                        <span className="rounded bg-emerald-500/20 px-2 py-0.5 text-[9px] font-black text-emerald-400 font-mono">
+                          LIVE
+                        </span>
+                      </div>
                     )}
                   </div>
 

@@ -10,10 +10,11 @@ import {
   runTransaction,
   where,
   setDoc,
+  updateDoc,
   type Firestore,
   type Unsubscribe,
 } from 'firebase/firestore';
-import type { Booking, Trip, TripStatus, User } from './types';
+import type { Booking, Trip, TripStatus, User, GeoLocation } from './types';
 
 // ---------------------------------------------------------------------------
 // Inicialización (lazy, para no romper el build si faltan variables de entorno)
@@ -377,4 +378,50 @@ export function getTripBookings(
     (err) => onError?.(err)
   );
 }
+
+// ---------------------------------------------------------------------------
+// 7. Geolocalización en Tiempo Real del Conductor (Flightradar24 style)
+// ---------------------------------------------------------------------------
+
+/**
+ * Actualiza las coordenadas geográficas, rumbo y velocidad del vehículo en Firestore.
+ */
+export async function updateTripLocation(
+  tripId: string,
+  location: GeoLocation
+): Promise<void> {
+  const db = getDb();
+  const tripRef = doc(db, COLLECTIONS.trips, tripId);
+  await updateDoc(tripRef, {
+    currentLocation: {
+      ...location,
+      updatedAt: new Date().toISOString(),
+    },
+  });
+}
+
+/**
+ * Escucha todos los viajes activos (scheduled o in_route) para el mapa en vivo.
+ */
+export function getAllActiveTrips(
+  onData: (trips: Trip[]) => void,
+  onError?: (error: Error) => void
+): Unsubscribe {
+  const q = query(
+    collection(getDb(), COLLECTIONS.trips),
+    where('availableSeats', '>', 0)
+  );
+
+  return onSnapshot(
+    q,
+    (snap) => {
+      const trips = snap.docs
+        .map((d) => ({ ...(d.data() as Omit<Trip, 'id'>), id: d.id }))
+        .filter((t) => t.status === 'scheduled' || t.status === 'in_route');
+      onData(trips);
+    },
+    (err) => onError?.(err)
+  );
+}
+
 

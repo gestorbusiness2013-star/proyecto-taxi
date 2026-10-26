@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import PwaRegister from '@/components/PwaRegister';
+import { AuthProvider } from '@/lib/auth';
 
 export const viewport: Viewport = {
   themeColor: '#0B0F17',
@@ -62,7 +63,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full bg-[#0B0F17] text-zinc-100 flex flex-col font-sans selection:bg-amber-500 selection:text-zinc-950">
         <PwaRegister />
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

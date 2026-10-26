@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   Clock,
   Car,
@@ -15,11 +16,15 @@ import {
   KeyRound,
   MapPin,
   Sparkles,
+  List,
+  Map,
 } from 'lucide-react';
 import type { Trip, Booking } from '@/lib/types';
 import { getLiveTrips, bookSeats } from '@/lib/db';
+import LiveRouteMap from '@/components/LiveRouteMap';
 
 type PassengerTopTab = 'scheduled' | 'in_route';
+type ViewMode = 'list' | 'map';
 
 interface PassengerViewProps {
   onBookingCreated?: (booking: Booking, trip: Trip) => void;
@@ -87,6 +92,43 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
   const displayedTrips = activeTab === 'scheduled' ? scheduledTrips : inRouteTrips;
   const isLoading = activeTab === 'scheduled' ? loadingScheduled : loadingInRoute;
 
+  // 1. Selector de vista (View Toggle): 'Lista' vs 'Mapa en vivo'
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const searchParams = useSearchParams();
+
+  // Cargar preferencia guardada en el estado local
+  useEffect(() => {
+    try {
+      const savedMode = localStorage.getItem('proyecto_taxi_view_mode') as ViewMode | null;
+      if (savedMode === 'list' || savedMode === 'map') {
+        setViewMode(savedMode);
+      }
+    } catch (e) {
+      console.warn('Error reading viewMode from localStorage:', e);
+    }
+  }, []);
+
+  const handleToggleViewMode = (mode: ViewMode) => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem('proyecto_taxi_view_mode', mode);
+    } catch (e) {
+      console.warn('Error saving viewMode to localStorage:', e);
+    }
+  };
+
+  // Reanudar reserva de viaje diferida tras login (?tripId=...)
+  useEffect(() => {
+    const tripIdParam = searchParams.get('tripId');
+    if (tripIdParam) {
+      const allTrips = [...scheduledTrips, ...inRouteTrips];
+      const match = allTrips.find((t) => t.id === tripIdParam);
+      if (match) {
+        setSelectedTrip(match);
+      }
+    }
+  }, [searchParams, scheduledTrips, inRouteTrips]);
+
   // Handle open simple booking modal
   const handleOpenBooking = (trip: Trip) => {
     setSelectedTrip(trip);
@@ -142,95 +184,144 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
 
   return (
     <div className="space-y-4 pb-24">
-      {/* 1. Pestañas en la parte superior: 'Próximas Salidas' y 'En Carretera' */}
-      <div className="sticky top-14 z-30 -mx-4 px-4 pt-1 pb-2 bg-[#0B0F17]/95 backdrop-blur-md border-b border-zinc-800/80">
-        <div className="flex rounded-2xl border border-zinc-800 bg-zinc-950 p-1.5 shadow-lg">
-          {/* Tab 1: Próximas Salidas */}
-          <button
-            type="button"
-            onClick={() => setActiveTab('scheduled')}
-            className={`flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 px-3 text-xs font-bold transition-all ${
-              activeTab === 'scheduled'
-                ? 'bg-amber-500 text-zinc-950 shadow-md shadow-amber-500/20'
-                : 'text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            <Clock className="h-4 w-4" />
-            <span>Próximas Salidas</span>
-            <span
-              className={`rounded-full px-1.5 py-0.2 text-[10px] font-black ${
+      {/* 1. Selector de vista (View Toggle) en la cabecera: 'Lista' y 'Mapa en vivo' */}
+      <div className="sticky top-14 z-30 -mx-4 px-4 pt-1 pb-2 bg-[#0B0F17]/95 backdrop-blur-md border-b border-zinc-800/80 space-y-2">
+        {/* Conmutador de Vistas: Lista vs Mapa en vivo */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-black tracking-wider text-white">
+              CARTELERA<span className="text-amber-400">VE</span>
+            </span>
+            <span className="rounded bg-amber-500/20 border border-amber-500/40 px-1.5 py-0.2 text-[9px] font-black text-amber-400">
+              VENEZUELA
+            </span>
+          </div>
+
+          {/* Botones del Conmutador de Vistas */}
+          <div className="flex rounded-xl border border-zinc-800 bg-zinc-950 p-1 shadow-md">
+            <button
+              type="button"
+              onClick={() => handleToggleViewMode('list')}
+              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-bold transition ${
+                viewMode === 'list'
+                  ? 'bg-amber-500 text-zinc-950 shadow-sm shadow-amber-500/20'
+                  : 'text-zinc-400 hover:text-white'
+              }`}
+            >
+              <List className="h-3.5 w-3.5" />
+              <span>Lista</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleToggleViewMode('map')}
+              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-bold transition ${
+                viewMode === 'map'
+                  ? 'bg-amber-500 text-zinc-950 shadow-sm shadow-amber-500/20'
+                  : 'text-zinc-400 hover:text-white'
+              }`}
+            >
+              <Map className="h-3.5 w-3.5" />
+              <span>Mapa en vivo</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Pestañas 'Próximas Salidas' / 'En Carretera' solo en modo Lista */}
+        {viewMode === 'list' && (
+          <div className="flex rounded-2xl border border-zinc-800 bg-zinc-950 p-1.5 shadow-lg">
+            {/* Tab 1: Próximas Salidas */}
+            <button
+              type="button"
+              onClick={() => setActiveTab('scheduled')}
+              className={`flex-1 flex items-center justify-center gap-2 rounded-xl py-2 px-3 text-xs font-bold transition-all ${
                 activeTab === 'scheduled'
-                  ? 'bg-zinc-950 text-amber-400'
-                  : 'bg-zinc-800 text-zinc-300'
+                  ? 'bg-amber-500 text-zinc-950 shadow-md shadow-amber-500/20'
+                  : 'text-zinc-400 hover:text-zinc-200'
               }`}
             >
-              {scheduledTrips.length}
-            </span>
-          </button>
+              <Clock className="h-4 w-4" />
+              <span>Próximas Salidas</span>
+              <span
+                className={`rounded-full px-1.5 py-0.2 text-[10px] font-black ${
+                  activeTab === 'scheduled'
+                    ? 'bg-zinc-950 text-amber-400'
+                    : 'bg-zinc-800 text-zinc-300'
+                }`}
+              >
+                {scheduledTrips.length}
+              </span>
+            </button>
 
-          {/* Tab 2: En Carretera */}
-          <button
-            type="button"
-            onClick={() => setActiveTab('in_route')}
-            className={`flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 px-3 text-xs font-bold transition-all ${
-              activeTab === 'in_route'
-                ? 'bg-emerald-500 text-zinc-950 shadow-md shadow-emerald-500/20'
-                : 'text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-            </span>
-            <span>En Carretera</span>
-            <span
-              className={`rounded-full px-1.5 py-0.2 text-[10px] font-black ${
+            {/* Tab 2: En Carretera */}
+            <button
+              type="button"
+              onClick={() => setActiveTab('in_route')}
+              className={`flex-1 flex items-center justify-center gap-2 rounded-xl py-2 px-3 text-xs font-bold transition-all ${
                 activeTab === 'in_route'
-                  ? 'bg-zinc-950 text-emerald-400'
-                  : 'bg-zinc-800 text-zinc-300'
+                  ? 'bg-emerald-500 text-zinc-950 shadow-md shadow-emerald-500/20'
+                  : 'text-zinc-400 hover:text-zinc-200'
               }`}
             >
-              {inRouteTrips.length}
-            </span>
-          </button>
-        </div>
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+              </span>
+              <span>En Carretera</span>
+              <span
+                className={`rounded-full px-1.5 py-0.2 text-[10px] font-black ${
+                  activeTab === 'in_route'
+                    ? 'bg-zinc-950 text-emerald-400'
+                    : 'bg-zinc-800 text-zinc-300'
+                }`}
+              >
+                {inRouteTrips.length}
+              </span>
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Sync Status Banner */}
-      <div className="flex items-center justify-between text-[11px] text-zinc-400 px-1">
-        <div className="flex items-center gap-1.5">
-          {isLiveConnected ? (
-            <span className="flex items-center gap-1 text-emerald-400 font-semibold">
-              <Radio className="h-3 w-3 animate-pulse" />
-              <span>Red Nacional en Vivo</span>
-            </span>
-          ) : (
-            <span>Conectando con Firestore...</span>
-          )}
-        </div>
-        <span>{displayedTrips.length} viajes con puestos disponibles</span>
-      </div>
+      {/* Renderizado condicional según modo de visualización */}
+      {viewMode === 'map' ? (
+        <LiveRouteMap onSelectTripToBook={(trip) => handleOpenBooking(trip)} />
+      ) : (
+        <>
+          {/* Sync Status Banner */}
+          <div className="flex items-center justify-between text-[11px] text-zinc-400 px-1">
+            <div className="flex items-center gap-1.5">
+              {isLiveConnected ? (
+                <span className="flex items-center gap-1 text-emerald-400 font-semibold">
+                  <Radio className="h-3 w-3 animate-pulse" />
+                  <span>Red Nacional en Vivo</span>
+                </span>
+              ) : (
+                <span>Conectando con Firestore...</span>
+              )}
+            </div>
+            <span>{displayedTrips.length} viajes con puestos disponibles</span>
+          </div>
 
-      {/* 2. Tarjetas de Viaje */}
-      <div className="space-y-3">
-        {isLoading ? (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 text-center text-zinc-400">
-            <RefreshCw className="mx-auto h-6 w-6 animate-spin text-amber-400 mb-2" />
-            <p className="text-xs">Cargando viajes interurbanos...</p>
-          </div>
-        ) : displayedTrips.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-zinc-800 p-8 text-center">
-            <Car className="mx-auto h-8 w-8 text-zinc-600 mb-2" />
-            <p className="text-sm font-semibold text-zinc-300">
-              {activeTab === 'scheduled'
-                ? 'No hay salidas programadas en este momento'
-                : 'No hay vehículos en carretera con puestos vacíos'}
-            </p>
-            <p className="text-xs text-zinc-500 mt-1">
-              Las rutas se actualizan en tiempo real tan pronto un chofer inicia recorrido.
-            </p>
-          </div>
-        ) : (
+          {/* 2. Tarjetas de Viaje */}
+          <div className="space-y-3">
+            {isLoading ? (
+              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 text-center text-zinc-400">
+                <RefreshCw className="mx-auto h-6 w-6 animate-spin text-amber-400 mb-2" />
+                <p className="text-xs">Cargando viajes interurbanos...</p>
+              </div>
+            ) : displayedTrips.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-zinc-800 p-8 text-center">
+                <Car className="mx-auto h-8 w-8 text-zinc-600 mb-2" />
+                <p className="text-sm font-semibold text-zinc-300">
+                  {activeTab === 'scheduled'
+                    ? 'No hay salidas programadas en este momento'
+                    : 'No hay vehículos en carretera con puestos vacíos'}
+                </p>
+                <p className="text-xs text-zinc-500 mt-1">
+                  Las rutas se actualizan en tiempo real tan pronto un chofer inicia recorrido.
+                </p>
+              </div>
+            ) : (
           displayedTrips.map((trip) => {
             const isEnRuta = trip.status === 'in_route';
             const departureDate = new Date(trip.departureTime);
@@ -361,6 +452,8 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
           })
         )}
       </div>
+    </>
+  )}
 
       {/* 3. Modal simple con botón 'Reservar Asiento' */}
       {selectedTrip && (

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import NavbarTop from '@/components/NavbarTop';
 import BottomNav, { NavTab } from '@/components/BottomNav';
 import PassengerView from '@/components/PassengerView';
@@ -72,7 +72,15 @@ export default function Home() {
       <main className="mx-auto w-full max-w-md flex-1 px-4 pt-2 pb-safe">
         {/* Vista Principal del Pasajero: Próximas Salidas y En Carretera */}
         {currentTab === 'viajes' && (
-          <PassengerView onBookingCreated={handleBookingCreated} />
+          <Suspense
+            fallback={
+              <div className="p-8 text-center text-xs text-zinc-400">
+                Cargando cartelera de rutas...
+              </div>
+            }
+          >
+            <PassengerView onBookingCreated={handleBookingCreated} />
+          </Suspense>
         )}
 
         {/* Mis Reservas y Boletos */}
