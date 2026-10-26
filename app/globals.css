@@ -21,11 +21,6 @@
   background-color: #080B10 !important;
 }
 
-/* Filtro nocturno de alto contraste para OpenStreetMap (sin marcas de agua) */
-.dark-tiles .leaflet-tile {
-  filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(120%) grayscale(25%) !important;
-}
-
 .neon-route-arc {
   filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.85)) drop-shadow(0 0 14px rgba(245, 158, 11, 0.4));
 }

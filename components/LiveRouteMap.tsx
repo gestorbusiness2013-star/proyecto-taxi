@@ -15,7 +15,6 @@ import {
   Navigation,
   RefreshCw,
   Lock,
-  Layers,
 } from 'lucide-react';
 import type { Trip, GeoLocation } from '@/lib/types';
 import { useAuth } from '@/lib/auth';
@@ -106,8 +105,6 @@ export default function LiveRouteMap({
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const leafletMapRef = useRef<any>(null);
-  const currentTileLayerRef = useRef<any>(null);
-  const esriRefLayerRef = useRef<any>(null);
   const markersGroupRef = useRef<any>(null);
   const polylinesGroupRef = useRef<any>(null);
 
@@ -115,57 +112,9 @@ export default function LiveRouteMap({
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeRoute, setActiveRoute] = useState<string>(selectedRouteFilter);
-  const [tileStyle, setTileStyle] = useState<'osm' | 'esri'>('osm');
 
   // Ficha flotante (Bottom-sheet) del vehículo seleccionado (solo usuarios autenticados)
   const [sheetTrip, setSheetTrip] = useState<Trip | null>(null);
-
-  // Alternar entre mapa nocturno de carreteras (OSM Dark) y radar (Esri Dark)
-  const toggleTileStyle = () => {
-    const next = tileStyle === 'osm' ? 'esri' : 'osm';
-    setTileStyle(next);
-
-    const map = leafletMapRef.current;
-    if (!map) return;
-
-    import('leaflet').then(({ default: L }) => {
-      if (currentTileLayerRef.current) {
-        map.removeLayer(currentTileLayerRef.current);
-        currentTileLayerRef.current = null;
-      }
-      if (esriRefLayerRef.current) {
-        map.removeLayer(esriRefLayerRef.current);
-        esriRefLayerRef.current = null;
-      }
-
-      if (next === 'osm') {
-        const layer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          subdomains: 'abc',
-          maxZoom: 19,
-          attribution: '&copy; OpenStreetMap contributors',
-          className: 'dark-tiles',
-        }).addTo(map);
-        currentTileLayerRef.current = layer;
-      } else {
-        const base = L.tileLayer(
-          'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
-          {
-            maxZoom: 16,
-            attribution: 'Tiles &copy; Esri, HERE, Garmin, &copy; OpenStreetMap',
-          }
-        ).addTo(map);
-        const ref = L.tileLayer(
-          'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
-          {
-            maxZoom: 16,
-            attribution: '',
-          }
-        ).addTo(map);
-        currentTileLayerRef.current = base;
-        esriRefLayerRef.current = ref;
-      }
-    });
-  };
 
   // Escuchar viajes activos de Firestore
   useEffect(() => {
@@ -201,10 +150,12 @@ export default function LiveRouteMap({
 
       if (!isMounted || !mapContainerRef.current) return;
 
-      // Crear mapa centrado en el centro-norte y oriente de Venezuela
+      // 2. Encuadre y Zoom predeterminado: tramo central de la ARC (10.25, -67.45)
+      // Nivel de zoom 9 adecuado para móvil para encuadrar Caracas, Maracay y Valencia claramente
       const map = L.map(mapContainerRef.current, {
-        center: [10.15, -67.2],
-        zoom: 8,
+        center: [10.25, -67.45],
+        zoom: 9,
+        zoomSnap: 0.5,
         minZoom: 6,
         maxZoom: 19,
         zoomControl: false,
@@ -218,20 +169,16 @@ export default function LiveRouteMap({
         })
         .addTo(map);
 
-      // Capa libre y pública sin marcas de agua ni requerimiento de API Key
-      // (OpenStreetMap con tema nocturno de alto contraste aplicado vía CSS)
-      const baseTileLayer = L.tileLayer(
-        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      // 1. Capa de mapa: CartoDB Dark Matter pura en alta resolución ('all' / dark_all) para fondo negro mate limpio
+      L.tileLayer(
+        'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
         {
-          subdomains: 'abc',
+          subdomains: 'abcd',
           maxZoom: 19,
           attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-          className: 'dark-tiles',
+            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
         }
       ).addTo(map);
-
-      currentTileLayerRef.current = baseTileLayer;
 
       // Grupos para capas de rutas y marcadores
       const polylinesGroup = L.layerGroup().addTo(map);
@@ -278,22 +225,22 @@ export default function LiveRouteMap({
         activeRoute === 'valencia-barquisimeto' ||
         activeRoute.includes('barquisimeto');
 
-      // Trazado de Autopista Regional del Centro (ARC)
+      // 3. Trazado de ruta (ARC Caracas -> Valencia)
       if (shouldShowArc) {
-        // Halo de resplandor exterior ámbar neón
+        // Halo exterior con estilo neón sutil
         L.polyline(ARC_HIGHWAY_COORDS, {
-          color: '#F59E0B',
-          weight: 7,
-          opacity: 0.35,
+          color: '#f59e0b',
+          weight: 8,
+          opacity: 0.25,
           lineCap: 'round',
           className: 'neon-route-arc',
         }).addTo(polylinesGroup);
 
-        // Línea central sólida
+        // Polilínea que conecta Caracas y Valencia siguiendo el eje vial
         L.polyline(ARC_HIGHWAY_COORDS, {
-          color: '#F59E0B',
-          weight: 3,
-          opacity: 0.95,
+          color: '#f59e0b',
+          weight: 4,
+          opacity: 0.8,
           lineCap: 'round',
         }).addTo(polylinesGroup);
       }
@@ -327,7 +274,7 @@ export default function LiveRouteMap({
         }).addTo(polylinesGroup);
       }
 
-      // Ajuste de zoom al tramo filtrado
+      // 2. Ajuste de zoom al tramo filtrado
       if (activeRoute === 'caracas-valencia' || activeRoute.includes('valencia')) {
         // Bounds específicos de la ARC (Caracas a Valencia)
         const arcBounds = L.latLngBounds(ARC_HIGHWAY_COORDS);
@@ -336,7 +283,8 @@ export default function LiveRouteMap({
         const orienteBounds = L.latLngBounds(ORIENTE_HIGHWAY_COORDS);
         map.fitBounds(orienteBounds, { padding: [30, 30], maxZoom: 9, animate: true });
       } else if (activeRoute === 'all') {
-        map.setView([10.15, -67.2], 8, { animate: true });
+        // Encuadre predeterminado en el tramo central de la ARC (Caracas, Maracay, Valencia)
+        map.setView([10.25, -67.45], 9, { animate: true });
       }
     });
   }, [activeRoute]);
@@ -494,16 +442,6 @@ export default function LiveRouteMap({
           <span>Oriente (Pto. Ordaz ➔ CCS)</span>
         </button>
 
-        {/* Selector de Capa de Mapa */}
-        <button
-          type="button"
-          onClick={toggleTileStyle}
-          className="shrink-0 flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-bold backdrop-blur-md border border-zinc-800 bg-zinc-950/85 text-zinc-300 hover:text-white hover:border-amber-500/50 transition shadow-lg ml-auto"
-          title="Alternar entre capa nocturna OSM y radar Esri"
-        >
-          <Layers className="h-3.5 w-3.5 text-amber-400" />
-          <span>{tileStyle === 'osm' ? 'Carretera Oscura' : 'Radar Esri'}</span>
-        </button>
       </div>
 
       {/* Contenedor Leaflet */}
@@ -519,9 +457,9 @@ export default function LiveRouteMap({
         <span className="text-zinc-400">unidades transmitiendo en vivo</span>
       </div>
 
-      {/* Atribución libre y limpia sin marcas de agua */}
+      {/* Atribución oficial CartoDB Dark Matter & OpenStreetMap */}
       <div className="absolute bottom-2.5 right-2.5 z-[400] text-[9px] text-zinc-500 bg-zinc-950/80 backdrop-blur-sm border border-zinc-900 px-2 py-0.5 rounded-md pointer-events-auto">
-        &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer" className="hover:underline text-zinc-400">OpenStreetMap</a> contributors
+        &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer" className="hover:underline text-zinc-400">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer" className="hover:underline text-zinc-400">CARTO</a>
       </div>
 
       {/* REQUISITO 3: FICHA INFERIOR FLOTANTE (BOTTOM-SHEET) PARA USUARIOS AUTENTICADOS */}
