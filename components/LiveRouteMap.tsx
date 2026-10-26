@@ -155,7 +155,7 @@ export default function LiveRouteMap({
         center: [10.15, -67.2],
         zoom: 8,
         minZoom: 6,
-        maxZoom: 18,
+        maxZoom: 19,
         zoomControl: false,
         attributionControl: false,
       });
@@ -167,14 +167,14 @@ export default function LiveRouteMap({
         })
         .addTo(map);
 
-      // CartoDB Dark Matter Tiles (Alto contraste para visibilidad nocturna y de carretera)
+      // CartoDB Dark Matter Tiles (Capa libre y pública de alto contraste sin API Key)
       L.tileLayer(
         'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
         {
           subdomains: 'abcd',
           maxZoom: 19,
           attribution:
-            '&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
         }
       ).addTo(map);
 
@@ -451,6 +451,11 @@ export default function LiveRouteMap({
         </span>
         <span className="font-bold text-white font-mono">{trips.length}</span>
         <span className="text-zinc-400">unidades transmitiendo en vivo</span>
+      </div>
+
+      {/* Atribución libre CartoDB Dark Matter & OpenStreetMap */}
+      <div className="absolute bottom-2.5 right-2.5 z-[400] text-[9px] text-zinc-500 bg-zinc-950/80 backdrop-blur-sm border border-zinc-900 px-2 py-0.5 rounded-md pointer-events-auto">
+        &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer" className="hover:underline text-zinc-400">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer" className="hover:underline text-zinc-400">CARTO</a>
       </div>
 
       {/* REQUISITO 3: FICHA INFERIOR FLOTANTE (BOTTOM-SHEET) PARA USUARIOS AUTENTICADOS */}
