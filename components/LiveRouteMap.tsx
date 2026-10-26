@@ -15,6 +15,7 @@ import {
   Navigation,
   RefreshCw,
   Lock,
+  Layers,
 } from 'lucide-react';
 import type { Trip, GeoLocation } from '@/lib/types';
 import { useAuth } from '@/lib/auth';
@@ -105,6 +106,8 @@ export default function LiveRouteMap({
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const leafletMapRef = useRef<any>(null);
+  const currentTileLayerRef = useRef<any>(null);
+  const esriRefLayerRef = useRef<any>(null);
   const markersGroupRef = useRef<any>(null);
   const polylinesGroupRef = useRef<any>(null);
 
@@ -112,9 +115,57 @@ export default function LiveRouteMap({
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeRoute, setActiveRoute] = useState<string>(selectedRouteFilter);
+  const [tileStyle, setTileStyle] = useState<'osm' | 'esri'>('osm');
 
   // Ficha flotante (Bottom-sheet) del vehículo seleccionado (solo usuarios autenticados)
   const [sheetTrip, setSheetTrip] = useState<Trip | null>(null);
+
+  // Alternar entre mapa nocturno de carreteras (OSM Dark) y radar (Esri Dark)
+  const toggleTileStyle = () => {
+    const next = tileStyle === 'osm' ? 'esri' : 'osm';
+    setTileStyle(next);
+
+    const map = leafletMapRef.current;
+    if (!map) return;
+
+    import('leaflet').then(({ default: L }) => {
+      if (currentTileLayerRef.current) {
+        map.removeLayer(currentTileLayerRef.current);
+        currentTileLayerRef.current = null;
+      }
+      if (esriRefLayerRef.current) {
+        map.removeLayer(esriRefLayerRef.current);
+        esriRefLayerRef.current = null;
+      }
+
+      if (next === 'osm') {
+        const layer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          subdomains: 'abc',
+          maxZoom: 19,
+          attribution: '&copy; OpenStreetMap contributors',
+          className: 'dark-tiles',
+        }).addTo(map);
+        currentTileLayerRef.current = layer;
+      } else {
+        const base = L.tileLayer(
+          'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+          {
+            maxZoom: 16,
+            attribution: 'Tiles &copy; Esri, HERE, Garmin, &copy; OpenStreetMap',
+          }
+        ).addTo(map);
+        const ref = L.tileLayer(
+          'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+          {
+            maxZoom: 16,
+            attribution: '',
+          }
+        ).addTo(map);
+        currentTileLayerRef.current = base;
+        esriRefLayerRef.current = ref;
+      }
+    });
+  };
 
   // Escuchar viajes activos de Firestore
   useEffect(() => {
@@ -167,16 +218,20 @@ export default function LiveRouteMap({
         })
         .addTo(map);
 
-      // CartoDB Dark Matter Tiles (Capa libre y pública de alto contraste sin API Key)
-      L.tileLayer(
-        'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+      // Capa libre y pública sin marcas de agua ni requerimiento de API Key
+      // (OpenStreetMap con tema nocturno de alto contraste aplicado vía CSS)
+      const baseTileLayer = L.tileLayer(
+        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
         {
-          subdomains: 'abcd',
+          subdomains: 'abc',
           maxZoom: 19,
           attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          className: 'dark-tiles',
         }
       ).addTo(map);
+
+      currentTileLayerRef.current = baseTileLayer;
 
       // Grupos para capas de rutas y marcadores
       const polylinesGroup = L.layerGroup().addTo(map);
@@ -438,10 +493,21 @@ export default function LiveRouteMap({
           <span className="h-2 w-2 rounded-full bg-emerald-400"></span>
           <span>Oriente (Pto. Ordaz ➔ CCS)</span>
         </button>
+
+        {/* Selector de Capa de Mapa */}
+        <button
+          type="button"
+          onClick={toggleTileStyle}
+          className="shrink-0 flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-bold backdrop-blur-md border border-zinc-800 bg-zinc-950/85 text-zinc-300 hover:text-white hover:border-amber-500/50 transition shadow-lg ml-auto"
+          title="Alternar entre capa nocturna OSM y radar Esri"
+        >
+          <Layers className="h-3.5 w-3.5 text-amber-400" />
+          <span>{tileStyle === 'osm' ? 'Carretera Oscura' : 'Radar Esri'}</span>
+        </button>
       </div>
 
       {/* Contenedor Leaflet */}
-      <div ref={mapContainerRef} className="w-full h-full z-0" />
+      <div ref={mapContainerRef} className="w-full h-full z-0 bg-[#080B10]" />
 
       {/* Badge Flotante Inferior de Estado en Vivo estilo Flightradar */}
       <div className="absolute bottom-3 left-3 z-[400] flex items-center gap-2 rounded-xl bg-zinc-950/85 backdrop-blur-md border border-zinc-800 px-2.5 py-1.5 text-[11px] text-zinc-300 shadow-xl">
@@ -453,9 +519,9 @@ export default function LiveRouteMap({
         <span className="text-zinc-400">unidades transmitiendo en vivo</span>
       </div>
 
-      {/* Atribución libre CartoDB Dark Matter & OpenStreetMap */}
+      {/* Atribución libre y limpia sin marcas de agua */}
       <div className="absolute bottom-2.5 right-2.5 z-[400] text-[9px] text-zinc-500 bg-zinc-950/80 backdrop-blur-sm border border-zinc-900 px-2 py-0.5 rounded-md pointer-events-auto">
-        &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer" className="hover:underline text-zinc-400">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer" className="hover:underline text-zinc-400">CARTO</a>
+        &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer" className="hover:underline text-zinc-400">OpenStreetMap</a> contributors
       </div>
 
       {/* REQUISITO 3: FICHA INFERIOR FLOTANTE (BOTTOM-SHEET) PARA USUARIOS AUTENTICADOS */}
