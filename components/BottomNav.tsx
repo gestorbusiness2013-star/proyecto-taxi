@@ -77,7 +77,7 @@ export default function BottomNav({
 
                 {/* Badge if present */}
                 {tab.badge !== undefined && (
-                  <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-amber-500 px-1 text-[9px] font-black text-zinc-950 shadow-sm">
+                  <span className="absolute -top-1 -right-1 flex h-4 min-w-[18px] items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-black text-zinc-950 shadow-sm">
                     {tab.badge}
                   </span>
                 )}
@@ -85,8 +85,8 @@ export default function BottomNav({
 
               {/* Tab Title */}
               <span
-                className={`mt-0.5 text-[11px] tracking-tight ${
-                  isActive ? 'text-amber-400 font-bold' : 'text-zinc-400'
+                className={`mt-1 text-xs tracking-tight ${
+                  isActive ? 'text-amber-400 font-bold' : 'text-zinc-300 font-medium'
                 }`}
               >
                 {tab.label}

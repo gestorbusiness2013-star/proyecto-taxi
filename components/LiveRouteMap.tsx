@@ -564,21 +564,21 @@ export default function LiveRouteMap({
                 </div>
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <h3 className="text-sm font-bold text-white">{sheetTrip.driverName}</h3>
+                    <h3 className="text-base font-black text-white">{sheetTrip.driverName}</h3>
                     <ShieldCheck className="h-4 w-4 text-emerald-400" />
                   </div>
-                  <div className="flex items-center gap-2 text-xs mt-0.5">
+                  <div className="flex items-center gap-2 text-xs mt-0.5 font-medium">
                     <span className="flex items-center gap-1 font-bold text-amber-400">
                       <Star className="h-3 w-3 fill-amber-400" />
                       <span>{sheetTrip.driverRating ?? 4.9}</span>
                     </span>
                     <span className="text-zinc-500">•</span>
-                    <span className="text-zinc-400 flex items-center gap-1">
-                      <Car className="h-3 w-3 text-amber-400" />
+                    <span className="text-zinc-300 flex items-center gap-1">
+                      <Car className="h-3.5 w-3.5 text-amber-400" />
                       <span>{sheetTrip.vehicleModel || 'Sedán Interurbano'}</span>
                     </span>
                     <span className="text-zinc-500">•</span>
-                    <span className="font-mono text-zinc-300 font-semibold">{sheetTrip.vehiclePlate}</span>
+                    <span className="font-mono text-zinc-200 font-bold">Placa {sheetTrip.vehiclePlate}</span>
                   </div>
                 </div>
               </div>
@@ -593,14 +593,14 @@ export default function LiveRouteMap({
             </div>
 
             {/* Trayecto y Estado del Viaje */}
-            <div className="flex items-center justify-between py-2.5 px-3 bg-zinc-900/80 rounded-xl border border-white/10">
+            <div className="flex items-center justify-between py-3 px-3.5 bg-zinc-900/80 rounded-xl border border-white/10">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-black text-white">{sheetTrip.origin}</span>
-                  <ArrowRight className="h-3.5 w-3.5 text-amber-400" />
-                  <span className="text-sm font-black text-white">{sheetTrip.destination}</span>
+                  <span className="text-base font-black text-white">{sheetTrip.origin}</span>
+                  <ArrowRight className="h-4 w-4 text-amber-400" />
+                  <span className="text-base font-black text-white">{sheetTrip.destination}</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-[10px] text-zinc-400">
+                <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-medium">
                   {sheetTrip.status === 'in_route' ? (
                     <span className="flex items-center gap-1 text-emerald-400 font-bold">
                       <span className="relative flex h-2 w-2">
@@ -611,27 +611,27 @@ export default function LiveRouteMap({
                     </span>
                   ) : (
                     <span className="flex items-center gap-1 text-sky-400 font-semibold">
-                      <Clock className="h-3 w-3" />
+                      <Clock className="h-3.5 w-3.5" />
                       <span>Salida estimada: {new Date(sheetTrip.departureTime).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' })}</span>
                     </span>
                   )}
                 </div>
               </div>
 
-              <span className="inline-flex items-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-black text-amber-400">
-                <Users className="h-3.5 w-3.5" />
-                <span>Quedan {sheetTrip.availableSeats} puestos</span>
+              <span className="inline-flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-black text-amber-400">
+                <Users className="h-4 w-4" />
+                <span>{sheetTrip.availableSeats} puestos</span>
               </span>
             </div>
 
             {/* Tarifa y Botón de Acción */}
             <div className="flex items-center justify-between pt-1">
               <div>
-                <div className="text-lg font-black text-white">
+                <div className="text-2xl font-black text-white leading-none">
                   ${sheetTrip.pricePerSeat}{' '}
-                  <span className="text-xs text-zinc-400 font-medium">USD / puesto</span>
+                  <span className="text-xs text-zinc-300 font-bold">USD</span>
                 </div>
-                <div className="text-[10px] text-amber-300 font-mono">
+                <div className="text-xs text-amber-300 font-mono font-bold mt-0.5">
                   Ref. Bs. {formatBs(sheetTrip.pricePerSeat * bcvRate)}
                 </div>
               </div>
@@ -643,10 +643,10 @@ export default function LiveRouteMap({
                     onSelectTripToBook?.(sheetTrip);
                     setSheetTrip(null);
                   }}
-                  className="flex items-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-400 px-5 py-2.5 text-xs font-black text-zinc-950 shadow-lg shadow-amber-500/20 active:scale-95 transition"
+                  className="flex items-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-400 px-5 py-3 text-sm font-black text-zinc-950 shadow-lg shadow-amber-500/20 active:scale-95 transition"
                 >
                   <span>Reservar Asiento</span>
-                  <ArrowRight className="h-3.5 w-3.5" />
+                  <ArrowRight className="h-4 w-4" />
                 </button>
               ) : (
                 <button
@@ -655,9 +655,9 @@ export default function LiveRouteMap({
                     setAuthPromptTrip(sheetTrip);
                     setSheetTrip(null);
                   }}
-                  className="flex items-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-400 px-4 py-2.5 text-xs font-black text-zinc-950 shadow-lg shadow-amber-500/20 active:scale-95 transition"
+                  className="flex items-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-400 px-4 py-3 text-sm font-black text-zinc-950 shadow-lg shadow-amber-500/20 active:scale-95 transition"
                 >
-                  <Lock className="h-3.5 w-3.5" />
+                  <Lock className="h-4 w-4" />
                   <span>Ingresar para Reservar</span>
                 </button>
               )}

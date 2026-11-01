@@ -306,26 +306,26 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
           <button
             type="button"
             onClick={() => handleToggleViewMode('list')}
-            className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-1.5 px-3 text-xs font-bold transition ${
+            className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-2 px-3 text-sm font-black transition ${
               viewMode === 'list'
                 ? 'bg-amber-500 text-zinc-950 shadow-sm shadow-amber-500/20'
                 : 'text-zinc-400 hover:text-white'
             }`}
           >
-            <List className="h-3.5 w-3.5" />
+            <List className="h-4 w-4" />
             <span>Lista</span>
           </button>
 
           <button
             type="button"
             onClick={() => handleToggleViewMode('map')}
-            className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-1.5 px-3 text-xs font-bold transition ${
+            className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-2 px-3 text-sm font-black transition ${
               viewMode === 'map'
                 ? 'bg-amber-500 text-zinc-950 shadow-sm shadow-amber-500/20'
                 : 'text-zinc-400 hover:text-white'
             }`}
           >
-            <Map className="h-3.5 w-3.5" />
+            <Map className="h-4 w-4" />
             <span>Mapa en vivo</span>
           </button>
         </div>
@@ -336,22 +336,22 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
             {/* Selector Origen */}
             <div className="flex-1 relative">
               <div className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none flex items-center text-emerald-400">
-                <MapPin className="h-3.5 w-3.5" />
+                <MapPin className="h-4 w-4" />
               </div>
               <select
                 aria-label="Filtrar por ciudad de origen"
                 value={originCity}
                 onChange={(e) => handleOriginChange(e.target.value)}
-                className="w-full appearance-none rounded-xl border border-white/10 bg-zinc-900/90 py-1.5 pl-7 pr-6 text-xs font-semibold text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/50 shadow-inner cursor-pointer"
+                className="w-full appearance-none rounded-xl border border-white/10 bg-zinc-900/90 py-2 pl-8 pr-6 text-sm font-bold text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/50 shadow-inner cursor-pointer"
               >
                 <option value="all">Origen: Todos</option>
                 {VENEZUELA_CITIES.map((c) => (
-                  <option key={c} value={c} className="bg-zinc-950 text-white">
+                  <option key={c} value={c} className="bg-zinc-950 text-white font-medium">
                     {c}
                   </option>
                 ))}
               </select>
-              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
+              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
             </div>
 
             {/* Botón Swap / Invertir origen y destino */}
@@ -359,30 +359,30 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
               type="button"
               onClick={handleSwapCities}
               title="Invertir origen y destino"
-              className="shrink-0 flex h-7 w-7 items-center justify-center rounded-xl border border-white/10 bg-zinc-900 text-zinc-400 hover:text-amber-400 hover:border-amber-500/40 transition active:scale-95"
+              className="shrink-0 flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-zinc-900 text-zinc-400 hover:text-amber-400 hover:border-amber-500/40 transition active:scale-95"
             >
-              <ArrowUpDown className="h-3 w-3" />
+              <ArrowUpDown className="h-3.5 w-3.5" />
             </button>
 
             {/* Selector Destino */}
             <div className="flex-1 relative">
               <div className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none flex items-center text-amber-400">
-                <Navigation className="h-3.5 w-3.5" />
+                <Navigation className="h-4 w-4" />
               </div>
               <select
                 aria-label="Filtrar por ciudad de destino"
                 value={destinationCity}
                 onChange={(e) => handleDestinationChange(e.target.value)}
-                className="w-full appearance-none rounded-xl border border-white/10 bg-zinc-900/90 py-1.5 pl-7 pr-6 text-xs font-semibold text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/50 shadow-inner cursor-pointer"
+                className="w-full appearance-none rounded-xl border border-white/10 bg-zinc-900/90 py-2 pl-8 pr-6 text-sm font-bold text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/50 shadow-inner cursor-pointer"
               >
                 <option value="all">Destino: Todos</option>
                 {VENEZUELA_CITIES.map((c) => (
-                  <option key={c} value={c} className="bg-zinc-950 text-white">
+                  <option key={c} value={c} className="bg-zinc-950 text-white font-medium">
                     {c}
                   </option>
                 ))}
               </select>
-              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
+              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
             </div>
           </div>
         </div>
@@ -394,7 +394,7 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
             <button
               type="button"
               onClick={() => setActiveTab('scheduled')}
-              className={`flex-1 flex items-center justify-center gap-2 rounded-xl py-2 px-3 text-xs font-bold transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 px-3 text-sm font-black transition-all ${
                 activeTab === 'scheduled'
                   ? 'bg-amber-500 text-zinc-950 shadow-md shadow-amber-500/20'
                   : 'text-zinc-400 hover:text-zinc-200'
@@ -403,7 +403,7 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
               <Clock className="h-4 w-4" />
               <span>Próximas Salidas</span>
               <span
-                className={`rounded-full px-1.5 py-0.2 text-[10px] font-black ${
+                className={`rounded-full px-2 py-0.5 text-xs font-black ${
                   activeTab === 'scheduled'
                     ? 'bg-zinc-950 text-amber-400'
                     : 'bg-zinc-800 text-zinc-300'
@@ -417,7 +417,7 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
             <button
               type="button"
               onClick={() => setActiveTab('in_route')}
-              className={`flex-1 flex items-center justify-center gap-2 rounded-xl py-2 px-3 text-xs font-bold transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 px-3 text-sm font-black transition-all ${
                 activeTab === 'in_route'
                   ? 'bg-emerald-500 text-zinc-950 shadow-md shadow-emerald-500/20'
                   : 'text-zinc-400 hover:text-zinc-200'
@@ -429,7 +429,7 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
               </span>
               <span>En Carretera</span>
               <span
-                className={`rounded-full px-1.5 py-0.2 text-[10px] font-black ${
+                className={`rounded-full px-2 py-0.5 text-xs font-black ${
                   activeTab === 'in_route'
                     ? 'bg-zinc-950 text-emerald-400'
                     : 'bg-zinc-800 text-zinc-300'
@@ -511,20 +511,20 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
                 }`}
               >
                 {/* Header: Hora / Badge En Ruta & Tarifa por Puesto */}
-                <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
+                <div className="flex items-center justify-between pb-3 border-b border-white/10">
                   {/* Hora de salida o Badge animado en verde si está 'EN RUTA' */}
                   <div>
                     {isEnRuta ? (
-                      <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/15 px-2.5 py-1 text-[11px] font-black text-emerald-400">
-                        <span className="relative flex h-2 w-2">
+                      <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/15 px-3 py-1.5 text-xs font-black text-emerald-400">
+                        <span className="relative flex h-2.5 w-2.5">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                         </span>
                         <span className="tracking-wider">EN RUTA GPS</span>
                       </div>
                     ) : (
-                      <div className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-300">
-                        <Clock className="h-3.5 w-3.5 text-amber-400" />
+                      <div className="inline-flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-sm font-black text-amber-300">
+                        <Clock className="h-4 w-4 text-amber-400" />
                         <span>Salida: {timeString}</span>
                       </div>
                     )}
@@ -533,47 +533,47 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
                   {/* Tarifa por puesto dual ($ y Bs) */}
                   <div className="text-right leading-tight">
                     <div>
-                      <span className="text-lg font-black text-white">
+                      <span className="text-2xl font-black text-white">
                         ${trip.pricePerSeat}
                       </span>
-                      <span className="text-[10px] text-zinc-400 font-medium ml-1">
+                      <span className="text-xs text-zinc-300 font-bold ml-1">
                         USD
                       </span>
                     </div>
-                    <div className="text-[10px] text-amber-400/90 font-mono font-medium">
-                      Bs. {formatBs(priceBcv)}
+                    <div className="text-xs font-mono font-bold text-amber-300 mt-0.5">
+                      Ref. Bs. {formatBs(priceBcv)}
                     </div>
                   </div>
                 </div>
 
                 {/* Origen y Destino Destacados en bloque con borde blanco sutil */}
-                <div className="my-2.5 rounded-xl border border-white/10 bg-zinc-950/70 p-3">
+                <div className="my-3 rounded-xl border border-white/10 bg-zinc-950/70 p-3.5">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="flex h-3 w-3 rounded-full bg-emerald-400 ring-4 ring-emerald-500/20 shrink-0" />
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="flex h-3.5 w-3.5 rounded-full bg-emerald-400 ring-4 ring-emerald-500/20 shrink-0" />
                       <div className="min-w-0">
-                        <span className="text-[9px] font-black uppercase tracking-wider text-emerald-400 block">Origen</span>
-                        <span className="text-sm font-extrabold text-white tracking-wide truncate block">
+                        <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400 block">Origen</span>
+                        <span className="text-base sm:text-lg font-black text-white tracking-wide truncate block">
                           {trip.origin}
                         </span>
                       </div>
                     </div>
-                    <ArrowRight className="h-4 w-4 text-zinc-500 shrink-0 mx-2" />
-                    <div className="flex items-center gap-2 text-right min-w-0">
+                    <ArrowRight className="h-4 w-4 text-zinc-400 shrink-0 mx-2" />
+                    <div className="flex items-center gap-2.5 text-right min-w-0">
                       <div className="min-w-0">
-                        <span className="text-[9px] font-black uppercase tracking-wider text-amber-400 block">Destino</span>
-                        <span className="text-sm font-extrabold text-white tracking-wide truncate block">
+                        <span className="text-[11px] font-black uppercase tracking-wider text-amber-400 block">Destino</span>
+                        <span className="text-base sm:text-lg font-black text-white tracking-wide truncate block">
                           {trip.destination}
                         </span>
                       </div>
-                      <span className="flex h-3 w-3 rounded-full bg-amber-400 ring-4 ring-amber-500/20 shrink-0" />
+                      <span className="flex h-3.5 w-3.5 rounded-full bg-amber-400 ring-4 ring-amber-500/20 shrink-0" />
                     </div>
                   </div>
 
                   {/* Punto seguro recomendado si existe */}
                   {(originMeetingPoint || destMeetingPoint) && (
-                    <div className="mt-2 pt-2 border-t border-white/5 flex items-center gap-1.5 text-[10px] text-zinc-400 truncate">
-                      <MapPin className="h-3 w-3 text-amber-400 shrink-0" />
+                    <div className="mt-2.5 pt-2.5 border-t border-white/5 flex items-center gap-1.5 text-xs text-zinc-300 font-medium truncate">
+                      <MapPin className="h-3.5 w-3.5 text-amber-400 shrink-0" />
                       <span className="truncate">
                         Punto seguro: {originMeetingPoint?.name ?? trip.origin}
                       </span>
@@ -582,59 +582,59 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
                 </div>
 
                 {/* Nombre del conductor y modelo del carro con borde blanco sutil */}
-                <div className="rounded-xl border border-white/10 bg-zinc-950/60 p-2.5 flex items-center justify-between">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-amber-400 font-bold text-xs border border-white/15">
+                <div className="rounded-xl border border-white/10 bg-zinc-950/60 p-3 flex items-center justify-between">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-amber-400 font-black text-sm border border-white/15">
                       {trip.driverName.charAt(0)}
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold text-zinc-200 truncate">
+                        <span className="text-sm font-bold text-white truncate">
                           {trip.driverName}
                         </span>
-                        <ShieldCheck className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                        <span className="flex items-center gap-0.5 text-[10px] font-bold text-amber-400">
-                          <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />
+                        <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0" />
+                        <span className="flex items-center gap-0.5 text-xs font-bold text-amber-400">
+                          <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
                           <span>4.9</span>
                         </span>
                       </div>
-                      <p className="text-[11px] text-zinc-400 flex items-center gap-1 mt-0.5 truncate">
-                        <Car className="h-3 w-3 text-amber-400 shrink-0" />
+                      <p className="text-xs text-zinc-300 flex items-center gap-1.5 mt-0.5 truncate font-medium">
+                        <Car className="h-3.5 w-3.5 text-amber-400 shrink-0" />
                         <span className="truncate">{carModel}</span>
-                        <span className="text-zinc-600">•</span>
-                        <span className="font-mono text-zinc-300 text-[10px] shrink-0">Placa {trip.vehiclePlate}</span>
+                        <span className="text-zinc-500">•</span>
+                        <span className="font-mono text-zinc-200 shrink-0 font-bold">Placa {trip.vehiclePlate}</span>
                       </p>
                     </div>
                   </div>
                 </div>
 
                 {/* Contador visual de puestos libres & Botón Reservar */}
-                <div className="mt-3 flex items-center justify-between pt-2.5 border-t border-white/10">
+                <div className="mt-3.5 flex items-center justify-between pt-3 border-t border-white/10">
                   {/* Contador visual de puestos libres */}
                   <div className="flex items-center gap-2">
                     <span
-                      className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-black ${
+                      className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-black ${
                         trip.availableSeats === 1
                           ? 'border border-red-500/40 bg-red-950/40 text-red-400 animate-pulse'
                           : 'border border-white/15 bg-amber-500/10 text-amber-300'
                       }`}
                     >
-                      <Users className="h-3.5 w-3.5" />
+                      <Users className="h-4 w-4" />
                       <span>
                         {trip.availableSeats === 1
                           ? '¡Último puesto!'
                           : `${trip.availableSeats} disponibles`}
                       </span>
                     </span>
-                    <span className="text-[11px] text-zinc-400 hidden xs:inline">
+                    <span className="text-xs text-zinc-400 font-medium hidden xs:inline">
                       (de {trip.totalSeats})
                     </span>
                   </div>
 
                   {/* Botón de acción touch-friendly */}
-                  <span className="flex items-center gap-1 rounded-xl bg-amber-500 px-3.5 py-1.5 text-xs font-bold text-zinc-950 shadow-md shadow-amber-500/20 group-hover:bg-amber-400 transition">
+                  <span className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2 text-sm font-black text-zinc-950 shadow-md shadow-amber-500/20 group-hover:bg-amber-400 transition">
                     <span>Reservar</span>
-                    <ArrowRight className="h-3.5 w-3.5" />
+                    <ArrowRight className="h-4 w-4" />
                   </span>
                 </div>
               </article>
@@ -676,7 +676,7 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
 
             <div className="mt-4 space-y-4">
               {/* Trip details brief with subtle white border */}
-              <div className="rounded-xl border border-white/10 bg-zinc-900/70 p-3 text-xs space-y-2">
+              <div className="rounded-xl border border-white/10 bg-zinc-900/70 p-3.5 text-sm space-y-2">
                 <div className="flex justify-between items-center text-zinc-300">
                   <span>Conductor:</span>
                   <span className="font-bold text-white">{selectedTrip.driverName}</span>
@@ -693,7 +693,7 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
 
               {/* Seat Selector */}
               <div>
-                <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
+                <label className="block text-sm font-bold text-zinc-200 mb-1.5">
                   Número de puestos a reservar:
                 </label>
                 <div className="flex gap-2">
@@ -702,7 +702,7 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
                       key={n}
                       type="button"
                       onClick={() => setSeatsToBook(n)}
-                      className={`flex-1 rounded-xl py-2 text-xs font-bold transition border ${
+                      className={`flex-1 rounded-xl py-2.5 text-sm font-black transition border ${
                         seatsToBook === n
                           ? 'border-amber-500 bg-amber-500 text-zinc-950 shadow-md shadow-amber-500/20'
                           : 'border-zinc-800 bg-zinc-900 text-zinc-300 hover:bg-zinc-800'
@@ -715,41 +715,41 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
               </div>
 
               {/* Passenger Info */}
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 <div>
-                  <label className="block text-[11px] font-medium text-zinc-400 mb-1">
+                  <label className="block text-xs font-bold text-zinc-300 mb-1">
                     Nombre del Pasajero:
                   </label>
                   <input
                     type="text"
                     value={passengerName}
                     onChange={(e) => setPassengerName(e.target.value)}
-                    className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs text-white focus:border-amber-500 focus:outline-none"
+                    className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-3.5 py-2.5 text-sm font-medium text-white focus:border-amber-500 focus:outline-none"
                     placeholder="Tu nombre completo"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium text-zinc-400 mb-1">
+                  <label className="block text-xs font-bold text-zinc-300 mb-1">
                     WhatsApp de Contacto:
                   </label>
                   <input
                     type="tel"
                     value={passengerPhone}
                     onChange={(e) => setPassengerPhone(e.target.value)}
-                    className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs text-white focus:border-amber-500 focus:outline-none"
+                    className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-3.5 py-2.5 text-sm font-medium text-white focus:border-amber-500 focus:outline-none"
                     placeholder="0412 / 0414 / 0424..."
                   />
                 </div>
               </div>
 
               {/* Total Price */}
-              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 flex justify-between items-center text-xs">
-                <span className="text-zinc-300">Total a pagar al abordar:</span>
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 flex justify-between items-center">
+                <span className="text-sm font-bold text-zinc-200">Total a pagar al abordar:</span>
                 <div className="text-right">
-                  <span className="text-base font-black text-amber-400">
+                  <span className="text-xl font-black text-amber-400">
                     ${selectedTrip.pricePerSeat * seatsToBook} USD
                   </span>
-                  <div className="text-[10px] text-amber-300/80 font-mono">
+                  <div className="text-xs text-amber-300 font-mono font-bold mt-0.5">
                     Ref. Bs. {formatBs(selectedTrip.pricePerSeat * seatsToBook * bcvRate)}
                   </div>
                 </div>
@@ -761,7 +761,7 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
                   type="button"
                   onClick={() => setSelectedTrip(null)}
                   disabled={isBookingLoading}
-                  className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900 py-3 text-xs font-semibold text-zinc-300 hover:bg-zinc-800 active:scale-95 transition"
+                  className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900 py-3 text-sm font-bold text-zinc-300 hover:bg-zinc-800 active:scale-95 transition"
                 >
                   Cancelar
                 </button>
@@ -769,7 +769,7 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
                   type="button"
                   onClick={handleConfirmBooking}
                   disabled={isBookingLoading}
-                  className="flex-1 rounded-xl bg-amber-500 py-3 text-xs font-bold text-zinc-950 shadow-lg shadow-amber-500/20 hover:bg-amber-400 active:scale-95 transition disabled:opacity-50 flex items-center justify-center gap-1.5"
+                  className="flex-1 rounded-xl bg-amber-500 py-3 text-sm font-black text-zinc-950 shadow-lg shadow-amber-500/20 hover:bg-amber-400 active:scale-95 transition disabled:opacity-50 flex items-center justify-center gap-1.5"
                 >
                   {isBookingLoading ? (
                     <span>Procesando reserva...</span>
@@ -792,32 +792,32 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
               <CheckCircle2 className="h-8 w-8" />
             </div>
 
-            <span className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-emerald-400">
+            <span className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-3.5 py-1 text-xs font-black uppercase tracking-wider text-emerald-400">
               Reserva Exitosa
             </span>
 
-            <h3 className="text-xl font-black text-white mt-2">
+            <h3 className="text-2xl font-black text-white mt-2">
               Boleto Digital
             </h3>
-            <p className="text-xs text-zinc-400 mt-0.5">
+            <p className="text-sm text-zinc-300 mt-1 font-medium">
               Ruta: <strong className="text-white">{confirmedBooking.trip.origin} ➔ {confirmedBooking.trip.destination}</strong>
             </p>
 
             {/* PIN de abordaje de 4 dígitos en números grandes */}
             <div className="my-5 rounded-2xl border-2 border-amber-500/50 bg-amber-500/10 py-4 px-6 shadow-inner">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-300 block mb-1">
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-300 block mb-1">
                 PIN de Abordaje Seguro
               </span>
               <div className="text-5xl font-black font-mono tracking-widest text-amber-400 drop-shadow-md">
                 {confirmedBooking.booking.boardingPin}
               </div>
-              <span className="text-[11px] text-zinc-400 block mt-1">
+              <span className="text-xs text-zinc-300 font-medium block mt-1.5">
                 Dicta o muestra este código al chofer al momento de subir
               </span>
             </div>
 
             {/* Trip details summary */}
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 text-xs text-left space-y-1 mb-5">
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3.5 text-sm text-left space-y-1.5 mb-5">
               <div className="flex justify-between text-zinc-300">
                 <span className="text-zinc-400">Chofer:</span>
                 <span className="font-bold text-white">{confirmedBooking.trip.driverName}</span>
@@ -832,9 +832,9 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
               </div>
               <div className="flex justify-between text-zinc-300">
                 <span className="text-zinc-400">Total a pagar:</span>
-                <span className="text-emerald-400 font-bold">
+                <span className="text-emerald-400 font-black">
                   ${confirmedBooking.trip.pricePerSeat * confirmedBooking.booking.seatsBooked} USD
-                  <span className="text-[10px] text-zinc-400 font-normal ml-1">
+                  <span className="text-xs text-zinc-300 font-normal ml-1">
                     (Bs. {formatBs(confirmedBooking.trip.pricePerSeat * confirmedBooking.booking.seatsBooked * bcvRate)})
                   </span>
                 </span>
@@ -856,7 +856,7 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
               )}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full flex items-center justify-center gap-2 rounded-2xl bg-[#25D366] hover:bg-[#20bd5a] py-3 px-4 text-xs font-black text-zinc-950 shadow-xl shadow-[#25D366]/20 transition-transform active:scale-95"
+              className="w-full flex items-center justify-center gap-2 rounded-2xl bg-[#25D366] hover:bg-[#20bd5a] py-3.5 px-4 text-sm font-black text-zinc-950 shadow-xl shadow-[#25D366]/20 transition-transform active:scale-95"
             >
               <MessageCircle className="h-4 w-4 fill-zinc-950" />
               <span>Avisar al Chofer por WhatsApp</span>

@@ -497,18 +497,18 @@ export default function ConductorPage() {
                 </div>
               )}
 
-              <form onSubmit={handlePublishTrip} className="space-y-3">
+              <form onSubmit={handlePublishTrip} className="space-y-3.5">
                 {/* Origen y Destino */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-zinc-400 mb-1 flex items-center gap-1">
-                      <MapPin className="h-3 w-3 text-emerald-400" />
+                    <label className="block text-xs font-bold text-zinc-300 mb-1 flex items-center gap-1">
+                      <MapPin className="h-3.5 w-3.5 text-emerald-400" />
                       <span>Origen:</span>
                     </label>
                     <select
                       value={origin}
                       onChange={(e) => setOrigin(e.target.value)}
-                      className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-white focus:border-amber-500 focus:outline-none"
+                      className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3.5 py-2.5 text-sm font-semibold text-white focus:border-amber-500 focus:outline-none"
                     >
                       {COMMON_CITIES.map((c) => (
                         <option key={`orig-${c}`} value={c}>
@@ -523,20 +523,20 @@ export default function ConductorPage() {
                         placeholder="Escribe la ciudad de origen"
                         value={customOrigin}
                         onChange={(e) => setCustomOrigin(e.target.value)}
-                        className="mt-1.5 w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-xs text-white focus:border-amber-500 focus:outline-none"
+                        className="mt-1.5 w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3.5 py-2 text-sm text-white focus:border-amber-500 focus:outline-none"
                       />
                     )}
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-zinc-400 mb-1 flex items-center gap-1">
-                      <MapPin className="h-3 w-3 text-amber-400" />
+                    <label className="block text-xs font-bold text-zinc-300 mb-1 flex items-center gap-1">
+                      <MapPin className="h-3.5 w-3.5 text-amber-400" />
                       <span>Destino:</span>
                     </label>
                     <select
                       value={destination}
                       onChange={(e) => setDestination(e.target.value)}
-                      className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-white focus:border-amber-500 focus:outline-none"
+                      className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3.5 py-2.5 text-sm font-semibold text-white focus:border-amber-500 focus:outline-none"
                     >
                       {COMMON_CITIES.map((c) => (
                         <option key={`dest-${c}`} value={c}>
@@ -551,7 +551,7 @@ export default function ConductorPage() {
                         placeholder="Escribe la ciudad de destino"
                         value={customDestination}
                         onChange={(e) => setCustomDestination(e.target.value)}
-                        className="mt-1.5 w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-xs text-white focus:border-amber-500 focus:outline-none"
+                        className="mt-1.5 w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3.5 py-2 text-sm text-white focus:border-amber-500 focus:outline-none"
                       />
                     )}
                   </div>
@@ -559,23 +559,23 @@ export default function ConductorPage() {
 
                 {/* Fecha y Hora de Salida */}
                 <div>
-                  <label className="block text-[11px] font-bold text-zinc-400 mb-1 flex items-center gap-1">
-                    <Clock className="h-3 w-3 text-amber-400" />
+                  <label className="block text-xs font-bold text-zinc-300 mb-1 flex items-center gap-1">
+                    <Clock className="h-3.5 w-3.5 text-amber-400" />
                     <span>Fecha y Hora de Salida:</span>
                   </label>
                   <input
                     type="datetime-local"
                     value={departureDateTime}
                     onChange={(e) => setDepartureDateTime(e.target.value)}
-                    className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-white focus:border-amber-500 focus:outline-none [color-scheme:dark]"
+                    className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3.5 py-2.5 text-sm font-semibold text-white focus:border-amber-500 focus:outline-none [color-scheme:dark]"
                   />
                 </div>
 
                 {/* Puestos y Tarifa */}
-                <div className="grid grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-zinc-400 mb-1 flex items-center gap-1">
-                      <Users className="h-3 w-3 text-amber-400" />
+                    <label className="block text-xs font-bold text-zinc-300 mb-1 flex items-center gap-1">
+                      <Users className="h-3.5 w-3.5 text-amber-400" />
                       <span>Puestos (1 a 6):</span>
                     </label>
                     <div className="flex gap-1">
@@ -584,10 +584,10 @@ export default function ConductorPage() {
                           key={num}
                           type="button"
                           onClick={() => setTotalSeats(num)}
-                          className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition ${
+                          className={`flex-1 py-2 rounded-xl text-sm font-black border transition ${
                             totalSeats === num
                               ? 'border-amber-500 bg-amber-500 text-zinc-950'
-                              : 'border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-white'
+                              : 'border-zinc-800 bg-zinc-950 text-zinc-300 hover:text-white'
                           }`}
                         >
                           {num}
@@ -597,8 +597,8 @@ export default function ConductorPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-zinc-400 mb-1 flex items-center gap-1">
-                      <DollarSign className="h-3 w-3 text-emerald-400" />
+                    <label className="block text-xs font-bold text-zinc-300 mb-1 flex items-center gap-1">
+                      <DollarSign className="h-3.5 w-3.5 text-emerald-400" />
                       <span>Tarifa por puesto:</span>
                     </label>
                     <div className="relative">
@@ -607,9 +607,9 @@ export default function ConductorPage() {
                         min={1}
                         value={pricePerSeat}
                         onChange={(e) => setPricePerSeat(Number(e.target.value))}
-                        className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-xs font-bold text-white focus:border-amber-500 focus:outline-none"
+                        className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3.5 py-2 text-sm font-black text-white focus:border-amber-500 focus:outline-none"
                       />
-                      <span className="absolute right-3 top-2 text-[10px] text-amber-300 font-mono">
+                      <span className="absolute right-3 top-2.5 text-xs text-amber-300 font-mono font-bold">
                         USD (Bs. {formatBs(pricePerSeat * bcvRate)})
                       </span>
                     </div>
@@ -619,7 +619,7 @@ export default function ConductorPage() {
                 <button
                   type="submit"
                   disabled={isPublishing}
-                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-400 py-3 text-xs font-black text-zinc-950 shadow-lg shadow-amber-500/20 active:scale-95 transition disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-400 py-3.5 text-sm font-black text-zinc-950 shadow-lg shadow-amber-500/20 active:scale-95 transition disabled:opacity-50"
                 >
                   <PlusCircle className="h-4 w-4" />
                   <span>{isPublishing ? 'Publicando en Firestore...' : 'Publicar Nuevo Viaje'}</span>
@@ -748,16 +748,16 @@ export default function ConductorPage() {
                   {/* Input Numérico para Validar PIN de 4 Dígitos */}
                   <div className="rounded-xl border border-amber-500/40 bg-zinc-900/90 p-4 space-y-3">
                     <div className="flex items-center gap-2">
-                      <KeyRound className="h-4 w-4 text-amber-400" />
-                      <h3 className="text-xs font-bold uppercase tracking-wider text-amber-300">
+                      <KeyRound className="h-4.5 w-4.5 text-amber-400" />
+                      <h3 className="text-sm font-black uppercase tracking-wider text-amber-300">
                         Validar Abordaje por PIN
                       </h3>
                     </div>
-                    <p className="text-[11px] text-zinc-400">
+                    <p className="text-xs text-zinc-300">
                       Pide al pasajero el PIN de 4 dígitos generado en su boleto digital.
                     </p>
 
-                    <form onSubmit={handleValidatePin} className="space-y-2.5">
+                    <form onSubmit={handleValidatePin} className="space-y-3">
                       <div className="flex gap-2">
                         <input
                           type="text"
@@ -766,12 +766,12 @@ export default function ConductorPage() {
                           placeholder="0000"
                           value={pinInput}
                           onChange={(e) => setPinInput(e.target.value.replace(/\D/g, ''))}
-                          className="w-32 rounded-xl border border-zinc-700 bg-zinc-950 py-2 text-center text-xl font-black font-mono tracking-widest text-amber-400 focus:border-amber-500 focus:outline-none"
+                          className="w-36 rounded-xl border border-zinc-700 bg-zinc-950 py-2.5 text-center text-2xl font-black font-mono tracking-widest text-amber-400 focus:border-amber-500 focus:outline-none"
                         />
                         <button
                           type="submit"
                           disabled={isValidatingPin || pinInput.length !== 4}
-                          className="flex-1 rounded-xl bg-amber-500 hover:bg-amber-400 py-2 text-xs font-black text-zinc-950 shadow-md shadow-amber-500/20 active:scale-95 transition disabled:opacity-50"
+                          className="flex-1 rounded-xl bg-amber-500 hover:bg-amber-400 py-2.5 text-sm font-black text-zinc-950 shadow-md shadow-amber-500/20 active:scale-95 transition disabled:opacity-50"
                         >
                           {isValidatingPin ? 'Validando...' : 'Validar Abordaje'}
                         </button>
@@ -779,7 +779,7 @@ export default function ConductorPage() {
 
                       {pinResult && (
                         <div
-                          className={`rounded-xl p-2.5 text-xs flex items-center gap-2 border ${
+                          className={`rounded-xl p-3 text-sm flex items-center gap-2 border ${
                             pinResult.type === 'success'
                               ? 'border-emerald-500/40 bg-emerald-950/40 text-emerald-300'
                               : 'border-red-500/40 bg-red-950/40 text-red-300'
@@ -797,27 +797,27 @@ export default function ConductorPage() {
                   </div>
 
                   {/* Lista en Tiempo Real de Pasajeros Reservados */}
-                  <div className="space-y-2.5">
+                  <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-zinc-300 flex items-center gap-1.5">
-                        <Users className="h-3.5 w-3.5 text-amber-400" />
+                      <span className="text-sm font-bold text-zinc-200 flex items-center gap-1.5">
+                        <Users className="h-4 w-4 text-amber-400" />
                         <span>Pasajeros en este Viaje ({tripBookings.length})</span>
                       </span>
-                      <span className="text-[10px] text-zinc-500">Actualización en vivo</span>
+                      <span className="text-xs text-zinc-400">Actualización en vivo</span>
                     </div>
 
                     {tripBookings.length === 0 ? (
-                      <div className="rounded-xl border border-dashed border-zinc-800 p-4 text-center text-xs text-zinc-500">
+                      <div className="rounded-xl border border-dashed border-zinc-800 p-5 text-center text-sm text-zinc-400">
                         Esperando reservas de pasajeros en esta ruta...
                       </div>
                     ) : (
-                      <div className="space-y-2">
+                      <div className="space-y-2.5">
                         {tripBookings.map((b) => {
                           const isBoarded = b.status === 'boarded';
                           return (
                             <div
                               key={b.id}
-                              className={`rounded-xl border p-3 flex items-center justify-between text-xs transition ${
+                              className={`rounded-xl border p-3.5 flex items-center justify-between text-sm transition ${
                                 isBoarded
                                   ? 'border-emerald-500/30 bg-emerald-950/20'
                                   : 'border-zinc-800 bg-zinc-900/60'
@@ -825,19 +825,19 @@ export default function ConductorPage() {
                             >
                               <div>
                                 <div className="flex items-center gap-2">
-                                  <span className="font-bold text-white">{b.passengerName}</span>
+                                  <span className="font-bold text-white text-sm">{b.passengerName}</span>
                                   {isBoarded ? (
-                                    <span className="rounded bg-emerald-500/20 px-1.5 py-0.2 text-[9px] font-bold text-emerald-400 flex items-center gap-1">
-                                      <CheckCircle2 className="h-3 w-3" />
+                                    <span className="rounded bg-emerald-500/20 px-2 py-0.5 text-xs font-bold text-emerald-400 flex items-center gap-1">
+                                      <CheckCircle2 className="h-3.5 w-3.5" />
                                       Abordado
                                     </span>
                                   ) : (
-                                    <span className="rounded bg-amber-500/20 px-1.5 py-0.2 text-[9px] font-bold text-amber-400">
+                                    <span className="rounded bg-amber-500/20 px-2 py-0.5 text-xs font-bold text-amber-400">
                                       Por abordar
                                     </span>
                                   )}
                                 </div>
-                                <p className="text-[11px] text-zinc-400 mt-0.5">
+                                <p className="text-xs text-zinc-300 mt-1">
                                   {b.seatsBooked} puesto(s) • Tel: {b.passengerPhone}
                                 </p>
                               </div>
@@ -852,9 +852,9 @@ export default function ConductorPage() {
                                 )}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-1 rounded-lg bg-[#25D366] hover:bg-[#20bd5a] px-3 py-1.5 text-xs font-bold text-zinc-950 shadow transition active:scale-95"
+                                className="flex items-center gap-1.5 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] px-3.5 py-2 text-xs font-black text-zinc-950 shadow transition active:scale-95"
                               >
-                                <MessageCircle className="h-3.5 w-3.5 fill-zinc-950" />
+                                <MessageCircle className="h-4 w-4 fill-zinc-950" />
                                 <span>WhatsApp</span>
                               </a>
                             </div>
