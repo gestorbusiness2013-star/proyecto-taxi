@@ -12,7 +12,10 @@ service cloud.firestore {
 
     // Helper: verifica si el usuario autenticado es un administrador registrado
     function isAdmin() {
-      return request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      return request.auth != null && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        || request.auth.token.email == 'gestorbusiness2013@gmail.com'
+      );
     }
 
     // ---------------- Administradores ----------------
