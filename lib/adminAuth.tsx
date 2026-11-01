@@ -12,7 +12,7 @@ import {
   signOut,
   type User as FirebaseUser,
 } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { COLLECTIONS, getDb, getFirebaseApp, isFirebaseConfigured } from './db';
 
 type AdminAuthState = {
@@ -36,12 +36,57 @@ const AUTH_ERRORS: Record<string, string> = {
     'El inicio de sesión con email no está habilitado en Firebase Authentication.',
 };
 
-async function checkIsAdmin(uid: string): Promise<boolean> {
+interface AdminCheckResult {
+  isAdmin: boolean;
+  errorMessage?: string;
+}
+
+async function checkIsAdmin(user: FirebaseUser): Promise<AdminCheckResult> {
   try {
-    const snap = await getDoc(doc(getDb(), COLLECTIONS.admins, uid));
-    return snap.exists();
-  } catch {
-    return false;
+    const db = getDb();
+    
+    // 1. Verificación primaria: documento en /admins/{user.uid}
+    const directDoc = await getDoc(doc(db, COLLECTIONS.admins, user.uid));
+    if (directDoc.exists()) {
+      return { isAdmin: true };
+    }
+
+    // 2. Verificación secundaria por si el documento fue nombrado con el correo
+    if (user.email) {
+      const emailDoc = await getDoc(doc(db, COLLECTIONS.admins, user.email.toLowerCase()));
+      if (emailDoc.exists()) {
+        return { isAdmin: true };
+      }
+
+      // 3. Verificación por consulta de campo email
+      const q = query(
+        collection(db, COLLECTIONS.admins),
+        where('email', '==', user.email.toLowerCase())
+      );
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        return { isAdmin: true };
+      }
+    }
+
+    return {
+      isAdmin: false,
+      errorMessage: `El usuario autenticado (UID: ${user.uid}) no está registrado en la colección 'admins'.`,
+    };
+  } catch (err: unknown) {
+    const code = (err as { code?: string })?.code;
+    const msg = (err as Error)?.message || '';
+    if (code === 'permission-denied' || msg.includes('permission')) {
+      return {
+        isAdmin: false,
+        errorMessage:
+          'Firestore denegó el permiso para verificar /admins. Por favor asegúrate de haber pulsado "Publicar" en la pestaña Reglas de Firebase Console.',
+      };
+    }
+    return {
+      isAdmin: false,
+      errorMessage: `Error verificando administrador: ${msg}`,
+    };
   }
 }
 
@@ -60,7 +105,12 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     const auth = getAuth(getFirebaseApp());
     return onAuthStateChanged(auth, async (user) => {
       setFirebaseUser(user);
-      setIsAdmin(user ? await checkIsAdmin(user.uid) : false);
+      if (user) {
+        const res = await checkIsAdmin(user);
+        setIsAdmin(res.isAdmin);
+      } else {
+        setIsAdmin(false);
+      }
       setIsLoading(false);
     });
   }, []);
@@ -70,18 +120,16 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     try {
       const auth = getAuth(getFirebaseApp());
       const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
-      const admin = await checkIsAdmin(cred.user.uid);
-      if (!admin) {
+      const res = await checkIsAdmin(cred.user);
+      if (!res.isAdmin) {
         await signOut(auth);
-        throw Object.assign(new Error('not-admin'), { code: 'not-admin' });
+        throw new Error(res.errorMessage || 'Esta cuenta no tiene permisos de administrador.');
       }
       setIsAdmin(true);
-    } catch (err) {
-      const code = (err as { code?: string }).code ?? '';
-      const msg =
-        code === 'not-admin'
-          ? 'Esta cuenta no tiene permisos de administrador.'
-          : AUTH_ERRORS[code] ?? 'No se pudo iniciar sesión. Intenta de nuevo.';
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code ?? '';
+      const customMsg = (err as Error)?.message;
+      const msg = AUTH_ERRORS[code] || customMsg || 'No se pudo iniciar sesión. Intenta de nuevo.';
       setError(msg);
       throw new Error(msg);
     }
