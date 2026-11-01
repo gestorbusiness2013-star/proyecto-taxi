@@ -550,7 +550,7 @@ export default function LiveRouteMap({
             <div className="w-10 h-1 bg-zinc-700/80 rounded-full mx-auto -mt-1 mb-1" />
 
             {/* Header: Foto / Iniciales, Nombre, Rating y Botón Cerrar */}
-            <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
+            <div className="flex items-center justify-between pb-2 border-b border-white/10">
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-zinc-950 font-black text-lg shadow-lg shadow-amber-500/20">
                   {sheetTrip.driverName.charAt(0)}
@@ -586,7 +586,7 @@ export default function LiveRouteMap({
             </div>
 
             {/* Trayecto y Estado del Viaje */}
-            <div className="flex items-center justify-between py-2 px-3 bg-zinc-900/70 rounded-xl border border-zinc-800/70">
+            <div className="flex items-center justify-between py-2.5 px-3 bg-zinc-900/80 rounded-xl border border-white/10">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-black text-white">{sheetTrip.origin}</span>

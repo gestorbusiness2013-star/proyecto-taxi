@@ -19,13 +19,13 @@ export default function BottomNav({
     {
       id: 'viajes' as NavTab,
       label: 'Viajes',
-      sublabel: 'Cartelera',
+      sublabel: 'En Vivo',
       icon: Compass,
     },
     {
       id: 'reservas' as NavTab,
       label: 'Mis Reservas',
-      sublabel: 'Rutas',
+      sublabel: 'Boletos',
       icon: CalendarCheck,
       badge: activeBookingsCount > 0 ? activeBookingsCount : undefined,
     },

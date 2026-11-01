@@ -220,10 +220,10 @@ export default function TripsTab({ onBookTripSuccess }: TripsTabProps) {
             return (
               <article
                 key={trip.id}
-                className="group relative overflow-hidden rounded-2xl border border-zinc-800/90 bg-gradient-to-b from-zinc-900 to-[#101725] p-4 shadow-lg transition-all duration-200 hover:border-zinc-700"
+                className="group relative overflow-hidden rounded-2xl border border-white/20 bg-gradient-to-b from-zinc-900/95 to-[#101725] p-4 shadow-xl transition-all duration-200 hover:border-white/40"
               >
                 {/* Top Bar: Time, Date & Price */}
-                <div className="flex items-center justify-between pb-2.5 border-b border-zinc-800/80">
+                <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
                   <div className="flex items-center gap-2">
                     <span className="flex items-center gap-1 rounded-md bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-xs font-black text-amber-400">
                       <Clock className="h-3 w-3" />
@@ -240,8 +240,8 @@ export default function TripsTab({ onBookTripSuccess }: TripsTabProps) {
                   </div>
                 </div>
 
-                {/* Route Trajectory Visual */}
-                <div className="my-3 space-y-2">
+                {/* Route Trajectory Visual in dedicated subtle white border container */}
+                <div className="my-3 rounded-xl border border-white/10 bg-zinc-950/60 p-2.5 space-y-2">
                   <div className="flex items-start gap-2.5">
                     <div className="flex flex-col items-center pt-0.5">
                       <span className="h-3 w-3 rounded-full bg-emerald-400 ring-4 ring-emerald-500/20" />
@@ -269,9 +269,9 @@ export default function TripsTab({ onBookTripSuccess }: TripsTabProps) {
                 </div>
 
                 {/* Driver & Vehicle row */}
-                <div className="mt-3 flex items-center justify-between pt-2.5 border-t border-zinc-800/70">
+                <div className="mt-3 flex items-center justify-between rounded-xl border border-white/10 bg-zinc-950/60 p-2.5">
                   <div className="flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 border border-amber-500/30 text-amber-400 text-xs font-bold">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 border border-white/15 text-amber-400 text-xs font-bold">
                       {trip.driverName.charAt(0)}
                     </div>
                     <div>

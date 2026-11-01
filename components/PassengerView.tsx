@@ -286,45 +286,33 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
     <div className="space-y-4 pb-24">
       {/* 1. Selector de vista (View Toggle) en la cabecera: 'Lista' y 'Mapa en vivo' */}
       <div className="sticky top-14 z-30 -mx-4 px-4 pt-1 pb-2 bg-[#0B0F17]/95 backdrop-blur-md border-b border-zinc-800/80 space-y-2">
-        {/* Conmutador de Vistas: Lista vs Mapa en vivo */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-black tracking-wider text-white">
-              CARTELERA<span className="text-amber-400">VE</span>
-            </span>
-            <span className="rounded bg-amber-500/20 border border-amber-500/40 px-1.5 py-0.2 text-[9px] font-black text-amber-400">
-              VENEZUELA
-            </span>
-          </div>
+        {/* Conmutador de Vistas: Solo Lista y Mapa en vivo */}
+        <div className="flex w-full rounded-xl border border-white/10 bg-zinc-950 p-1 shadow-md">
+          <button
+            type="button"
+            onClick={() => handleToggleViewMode('list')}
+            className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-1.5 px-3 text-xs font-bold transition ${
+              viewMode === 'list'
+                ? 'bg-amber-500 text-zinc-950 shadow-sm shadow-amber-500/20'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            <List className="h-3.5 w-3.5" />
+            <span>Lista</span>
+          </button>
 
-          {/* Botones del Conmutador de Vistas */}
-          <div className="flex rounded-xl border border-zinc-800 bg-zinc-950 p-1 shadow-md">
-            <button
-              type="button"
-              onClick={() => handleToggleViewMode('list')}
-              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-bold transition ${
-                viewMode === 'list'
-                  ? 'bg-amber-500 text-zinc-950 shadow-sm shadow-amber-500/20'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              <List className="h-3.5 w-3.5" />
-              <span>Lista</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleToggleViewMode('map')}
-              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-bold transition ${
-                viewMode === 'map'
-                  ? 'bg-amber-500 text-zinc-950 shadow-sm shadow-amber-500/20'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              <Map className="h-3.5 w-3.5" />
-              <span>Mapa en vivo</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => handleToggleViewMode('map')}
+            className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-1.5 px-3 text-xs font-bold transition ${
+              viewMode === 'map'
+                ? 'bg-amber-500 text-zinc-950 shadow-sm shadow-amber-500/20'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            <Map className="h-3.5 w-3.5" />
+            <span>Mapa en vivo</span>
+          </button>
         </div>
 
         {/* 2. Barra de Selectores de Ciudad (Origen y Destino) */}
@@ -339,7 +327,7 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
                 aria-label="Filtrar por ciudad de origen"
                 value={originCity}
                 onChange={(e) => handleOriginChange(e.target.value)}
-                className="w-full appearance-none rounded-xl border border-zinc-800 bg-zinc-900/90 py-1.5 pl-7 pr-6 text-xs font-semibold text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/50 shadow-inner cursor-pointer"
+                className="w-full appearance-none rounded-xl border border-white/10 bg-zinc-900/90 py-1.5 pl-7 pr-6 text-xs font-semibold text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/50 shadow-inner cursor-pointer"
               >
                 <option value="all">Origen: Todos</option>
                 {VENEZUELA_CITIES.map((c) => (
@@ -356,7 +344,7 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
               type="button"
               onClick={handleSwapCities}
               title="Invertir origen y destino"
-              className="shrink-0 flex h-7 w-7 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-amber-400 hover:border-amber-500/40 transition active:scale-95"
+              className="shrink-0 flex h-7 w-7 items-center justify-center rounded-xl border border-white/10 bg-zinc-900 text-zinc-400 hover:text-amber-400 hover:border-amber-500/40 transition active:scale-95"
             >
               <ArrowUpDown className="h-3 w-3" />
             </button>
@@ -370,7 +358,7 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
                 aria-label="Filtrar por ciudad de destino"
                 value={destinationCity}
                 onChange={(e) => handleDestinationChange(e.target.value)}
-                className="w-full appearance-none rounded-xl border border-zinc-800 bg-zinc-900/90 py-1.5 pl-7 pr-6 text-xs font-semibold text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/50 shadow-inner cursor-pointer"
+                className="w-full appearance-none rounded-xl border border-white/10 bg-zinc-900/90 py-1.5 pl-7 pr-6 text-xs font-semibold text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/50 shadow-inner cursor-pointer"
               >
                 <option value="all">Destino: Todos</option>
                 {VENEZUELA_CITIES.map((c) => (
@@ -384,63 +372,9 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
           </div>
         </div>
 
-        {/* 3. Chips Rápidos de Corredores Viales (Accesos Directos) */}
-        <div className="flex gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
-          <button
-            type="button"
-            onClick={() => handleQuickChip('all')}
-            className={`shrink-0 rounded-xl px-2.5 py-1 text-[11px] font-bold border transition ${
-              quickRoute === 'all' && originCity === 'all' && destinationCity === 'all'
-                ? 'bg-amber-500 text-zinc-950 border-amber-400 shadow-sm shadow-amber-500/20'
-                : 'bg-zinc-900/80 text-zinc-400 border-zinc-800 hover:text-white hover:border-zinc-700'
-            }`}
-          >
-            Todas las Rutas
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleQuickChip('caracas-valencia')}
-            className={`shrink-0 flex items-center gap-1.5 rounded-xl px-2.5 py-1 text-[11px] font-bold border transition ${
-              quickRoute === 'caracas-valencia'
-                ? 'bg-amber-500 text-zinc-950 border-amber-400 shadow-sm shadow-amber-500/20'
-                : 'bg-zinc-900/80 text-amber-400 border-amber-500/30 hover:border-amber-500/60'
-            }`}
-          >
-            <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
-            <span>ARC (Caracas ➔ Valencia)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleQuickChip('puerto-ordaz-caracas')}
-            className={`shrink-0 flex items-center gap-1.5 rounded-xl px-2.5 py-1 text-[11px] font-bold border transition ${
-              quickRoute === 'puerto-ordaz-caracas'
-                ? 'bg-emerald-500 text-zinc-950 border-emerald-400 shadow-sm shadow-emerald-500/20'
-                : 'bg-zinc-900/80 text-emerald-400 border-emerald-500/30 hover:border-emerald-500/60'
-            }`}
-          >
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-            <span>Oriente (Pto. Ordaz ➔ CCS)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleQuickChip('caracas-barquisimeto')}
-            className={`shrink-0 flex items-center gap-1.5 rounded-xl px-2.5 py-1 text-[11px] font-bold border transition ${
-              quickRoute === 'caracas-barquisimeto'
-                ? 'bg-sky-500 text-zinc-950 border-sky-400 shadow-sm shadow-sky-500/20'
-                : 'bg-zinc-900/80 text-sky-400 border-sky-500/30 hover:border-sky-500/60'
-            }`}
-          >
-            <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
-            <span>Centro-Occidente (CCS ➔ Bqto)</span>
-          </button>
-        </div>
-
         {/* Pestañas 'Próximas Salidas' / 'En Carretera' solo en modo Lista */}
         {viewMode === 'list' && (
-          <div className="flex rounded-2xl border border-zinc-800 bg-zinc-950 p-1.5 shadow-lg">
+          <div className="flex rounded-2xl border border-white/10 bg-zinc-950 p-1.5 shadow-lg">
             {/* Tab 1: Próximas Salidas */}
             <button
               type="button"
@@ -553,18 +487,18 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
               <article
                 key={trip.id}
                 onClick={() => handleOpenBooking(trip)}
-                className={`group relative overflow-hidden rounded-2xl border p-4 shadow-lg transition-all duration-200 cursor-pointer active:scale-[0.99] ${
+                className={`group relative overflow-hidden rounded-2xl border p-4 shadow-xl transition-all duration-200 cursor-pointer active:scale-[0.99] ${
                   isEnRuta
-                    ? 'border-emerald-500/40 bg-gradient-to-b from-zinc-900 via-zinc-900 to-emerald-950/20 hover:border-emerald-400/60'
-                    : 'border-zinc-800/90 bg-gradient-to-b from-zinc-900 to-[#101725] hover:border-amber-500/50'
+                    ? 'border-white/20 hover:border-emerald-400/60 bg-gradient-to-b from-zinc-900/95 via-zinc-900 to-emerald-950/20 ring-1 ring-emerald-500/20 shadow-emerald-950/20'
+                    : 'border-white/20 hover:border-white/40 bg-gradient-to-b from-zinc-900/95 via-zinc-900 to-[#101725] shadow-black/50'
                 }`}
               >
                 {/* Header: Hora / Badge En Ruta & Tarifa por Puesto */}
-                <div className="flex items-center justify-between pb-3 border-b border-zinc-800/80">
+                <div className="flex items-center justify-between pb-3 border-b border-white/10">
                   {/* Hora de salida o Badge animado en verde si está 'EN RUTA' */}
                   <div>
                     {isEnRuta ? (
-                      <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/50 bg-emerald-500/15 px-3 py-1 text-xs font-black text-emerald-400">
+                      <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/15 px-3 py-1 text-xs font-black text-emerald-400">
                         <span className="relative flex h-2 w-2">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                           <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -572,7 +506,7 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
                         <span className="tracking-wider">EN RUTA</span>
                       </div>
                     ) : (
-                      <div className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-400">
+                      <div className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-zinc-950/70 px-2.5 py-1 text-xs font-bold text-amber-400">
                         <Clock className="h-3.5 w-3.5" />
                         <span>Salida: {timeString}</span>
                       </div>
@@ -587,35 +521,41 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
                     <span className="text-[11px] text-zinc-400 font-medium ml-1">
                       USD / puesto
                     </span>
-                    <div className="text-[10px] text-zinc-500 font-mono">
+                    <div className="text-[10px] text-zinc-400 font-mono">
                       Ref. Bs. {priceBcv.toLocaleString('es-VE')}
                     </div>
                   </div>
                 </div>
 
-                {/* Origen y Destino Destacados */}
-                <div className="my-3.5 space-y-2">
+                {/* Origen y Destino Destacados en bloque con borde blanco sutil */}
+                <div className="my-3 rounded-xl border border-white/10 bg-zinc-950/60 p-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="flex h-3 w-3 rounded-full bg-emerald-400 ring-4 ring-emerald-500/20" />
-                      <span className="text-base font-extrabold text-white tracking-wide">
-                        {trip.origin}
-                      </span>
+                      <span className="flex h-3 w-3 rounded-full bg-emerald-400 ring-4 ring-emerald-500/20 shrink-0" />
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 block">Origen</span>
+                        <span className="text-sm font-extrabold text-white tracking-wide">
+                          {trip.origin}
+                        </span>
+                      </div>
                     </div>
-                    <ArrowRight className="h-4 w-4 text-zinc-500 mx-2" />
-                    <div className="flex items-center gap-2">
-                      <span className="text-base font-extrabold text-white tracking-wide">
-                        {trip.destination}
-                      </span>
-                      <span className="flex h-3 w-3 rounded-full bg-amber-400 ring-4 ring-amber-500/20" />
+                    <ArrowRight className="h-4 w-4 text-zinc-400 shrink-0 mx-2" />
+                    <div className="flex items-center gap-2 text-right">
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 block">Destino</span>
+                        <span className="text-sm font-extrabold text-white tracking-wide">
+                          {trip.destination}
+                        </span>
+                      </div>
+                      <span className="flex h-3 w-3 rounded-full bg-amber-400 ring-4 ring-amber-500/20 shrink-0" />
                     </div>
                   </div>
                 </div>
 
-                {/* Nombre del conductor y modelo del carro */}
-                <div className="rounded-xl border border-zinc-800/80 bg-zinc-950/60 p-2.5 flex items-center justify-between">
+                {/* Nombre del conductor y modelo del carro con borde blanco sutil */}
+                <div className="rounded-xl border border-white/10 bg-zinc-950/60 p-2.5 flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 text-amber-400 font-bold text-xs border border-zinc-700">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 text-amber-400 font-bold text-xs border border-white/15">
                       {trip.driverName.charAt(0)}
                     </div>
                     <div>
@@ -636,14 +576,14 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
                 </div>
 
                 {/* Contador visual de puestos libres & Botón Reservar */}
-                <div className="mt-3.5 flex items-center justify-between pt-2">
+                <div className="mt-3 flex items-center justify-between pt-2.5 border-t border-white/10">
                   {/* Contador visual de puestos libres */}
                   <div className="flex items-center gap-2">
                     <span
                       className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-black ${
                         trip.availableSeats === 1
                           ? 'border border-red-500/40 bg-red-950/40 text-red-400 animate-pulse'
-                          : 'border border-amber-500/30 bg-amber-500/10 text-amber-400'
+                          : 'border border-white/15 bg-amber-500/10 text-amber-400'
                       }`}
                     >
                       <Users className="h-3.5 w-3.5" />
@@ -653,7 +593,7 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
                           : `Quedan ${trip.availableSeats} puestos`}
                       </span>
                     </span>
-                    <span className="text-[11px] text-zinc-500">
+                    <span className="text-[11px] text-zinc-400">
                       (de {trip.totalSeats})
                     </span>
                   </div>
@@ -675,9 +615,9 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
       {/* 3. Modal simple con botón 'Reservar Asiento' */}
       {selectedTrip && (
         <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/90 backdrop-blur-md p-4 overflow-y-auto">
-          <div className="w-full max-w-md rounded-2xl border border-zinc-700 bg-zinc-950 p-5 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-200">
+          <div className="w-full max-w-md rounded-2xl border border-white/20 bg-zinc-950 p-5 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-200">
             {/* Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400">
                   {selectedTrip.status === 'in_route' ? 'Viaje en Carretera' : 'Próxima Salida'}
@@ -702,8 +642,8 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
             )}
 
             <div className="mt-4 space-y-4">
-              {/* Trip details brief */}
-              <div className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-3 text-xs space-y-2">
+              {/* Trip details brief with subtle white border */}
+              <div className="rounded-xl border border-white/10 bg-zinc-900/70 p-3 text-xs space-y-2">
                 <div className="flex justify-between items-center text-zinc-300">
                   <span>Conductor:</span>
                   <span className="font-bold text-white">{selectedTrip.driverName}</span>
