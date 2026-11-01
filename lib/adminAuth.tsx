@@ -43,6 +43,11 @@ interface AdminCheckResult {
 
 async function checkIsAdmin(user: FirebaseUser): Promise<AdminCheckResult> {
   try {
+    // 0. Superadmin permanente por correo del propietario
+    if (user.email && user.email.toLowerCase() === 'gestorbusiness2013@gmail.com') {
+      return { isAdmin: true };
+    }
+
     const db = getDb();
     
     // 1. Verificación primaria: documento en /admins/{user.uid}

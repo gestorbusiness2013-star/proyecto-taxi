@@ -13,17 +13,18 @@ service cloud.firestore {
     // Helper: verifica si el usuario autenticado es un administrador registrado
     function isAdmin() {
       return request.auth != null && (
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
-        || request.auth.token.email == 'gestorbusiness2013@gmail.com'
+        request.auth.token.email == 'gestorbusiness2013@gmail.com'
+        || exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        || (request.auth.token.email != null && exists(/databases/$(database)/documents/admins/$(request.auth.token.email)))
       );
     }
 
     // ---------------- Administradores ----------------
     match /admins/{adminId} {
-      // Cualquier usuario autenticado puede comprobar si su propio UID está en admins
+      // Cualquier usuario autenticado puede comprobar administradores
       allow read: if request.auth != null;
-      // Solo editable desde Firebase Console
-      allow write: if false;
+      // Solo editable por un admin
+      allow write: if isAdmin();
     }
 
     // ---------------- Usuarios ----------------
@@ -114,6 +115,21 @@ service cloud.firestore {
         && request.resource.data.message is string;
       // Solo el administrador puede leer, gestionar y resolver reportes
       allow read, update, delete: if isAdmin();
+    }
+
+    // ---------------- Reseñas / Calificaciones ----------------
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if request.resource.data.rating is int
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5;
+      allow update, delete: if isAdmin();
+    }
+
+    // ---------------- Configuraciones (Tasa BCV, etc.) ----------------
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
   }
 }

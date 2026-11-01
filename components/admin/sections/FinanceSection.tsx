@@ -16,6 +16,7 @@ import {
   MessageCircle,
   RefreshCw,
   Edit2,
+  ExternalLink,
 } from 'lucide-react';
 import type { Payment, PaymentMethod, User } from '@/lib/types';
 import {
@@ -32,6 +33,7 @@ import {
   formatBs,
   listenBcvRate,
   updateBcvRate,
+  syncLiveBcvRate,
 } from '@/lib/bcv';
 import { WhatsAppTemplates, buildWhatsAppLink } from '@/lib/whatsapp';
 import {
@@ -90,6 +92,18 @@ export default function FinanceSection({
       `Tasa oficial BCV actualizada a Bs. ${bcvInputRate} / USD.`
     );
     setIsEditingBcv(false);
+  };
+
+  const handleSyncBcvRate = async () => {
+    await run(
+      'bcv-sync',
+      async () => {
+        const rate = await syncLiveBcvRate(adminEmail);
+        setBcvInputRate(rate);
+        return rate;
+      },
+      'Tasa BCV sincronizada automáticamente con el Banco Central de Venezuela.'
+    );
   };
 
   // Formulario nuevo pago
@@ -233,7 +247,7 @@ export default function FinanceSection({
       {/* Barra de Tasa Oficial BCV */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-zinc-900 to-zinc-950 p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 shadow-md">
             <Coins className="h-5 w-5" />
           </div>
           <div>
@@ -242,26 +256,43 @@ export default function FinanceSection({
                 Tasa Oficial BCV
               </span>
               <span className="text-[10px] text-zinc-500">
-                Actualizado: {fmtDateTime(bcvConfig.lastUpdated)}
+                {bcvConfig.source === 'auto' ? 'Sincronizado auto' : 'Fijado manual'} • {fmtDateTime(bcvConfig.lastUpdated)}
               </span>
             </div>
-            <div className="text-lg font-black text-white">
+            <div className="text-xl font-black text-white">
               Bs. {bcvConfig.rate.toLocaleString('es-VE', { minimumFractionDigits: 2 })} <span className="text-xs text-zinc-400 font-normal">/ USD</span>
             </div>
+            <a
+              href="https://www.bcv.org.ve/glosario/cambio-oficial"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-[11px] text-amber-400/80 hover:text-amber-300 transition mt-0.5"
+            >
+              <span>Verificar en bcv.org.ve</span>
+              <ExternalLink className="h-3 w-3" />
+            </a>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-xs text-zinc-400 hidden sm:inline">
-            Cuota $10 USD = <strong className="text-emerald-400">{formatBs(10, bcvConfig.rate)}</strong>
-          </span>
+          <button
+            type="button"
+            disabled={busyId === 'bcv-sync'}
+            onClick={handleSyncBcvRate}
+            className="flex items-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-950/40 px-3 py-2 text-xs font-bold text-emerald-300 hover:bg-emerald-900/50 transition active:scale-95 disabled:opacity-50"
+            title="Sincronizar directamente con el Banco Central de Venezuela"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 text-emerald-400 ${busyId === 'bcv-sync' ? 'animate-spin' : ''}`} />
+            <span>{busyId === 'bcv-sync' ? 'Sincronizando...' : 'Sincronizar BCV'}</span>
+          </button>
+
           <button
             type="button"
             onClick={() => setIsEditingBcv(true)}
-            className="flex items-center gap-1.5 rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs font-bold text-zinc-200 hover:bg-zinc-700 transition active:scale-95"
+            className="flex items-center gap-1.5 rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs font-bold text-zinc-200 hover:bg-zinc-700 transition active:scale-95"
           >
             <Edit2 className="h-3.5 w-3.5 text-amber-400" />
-            <span>Fijar Tasa BCV</span>
+            <span>Editar Tasa</span>
           </button>
         </div>
       </div>
@@ -639,6 +670,25 @@ export default function FinanceSection({
             <p className="text-xs text-zinc-300">
               Ingresa el valor del dólar oficial publicado por el Banco Central de Venezuela para actualizar los cálculos en toda la plataforma:
             </p>
+            <div className="flex items-center justify-between text-xs pb-1 border-b border-zinc-800">
+              <a
+                href="https://www.bcv.org.ve/glosario/cambio-oficial"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-amber-400 hover:underline font-bold"
+              >
+                <span>Consultar bcv.org.ve</span>
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+              <button
+                type="button"
+                onClick={handleSyncBcvRate}
+                disabled={busyId === 'bcv-sync'}
+                className="text-emerald-400 hover:text-emerald-300 font-bold"
+              >
+                {busyId === 'bcv-sync' ? 'Sincronizando...' : 'Auto-obtener'}
+              </button>
+            </div>
             <form onSubmit={handleSaveBcvRate} className="space-y-3">
               <div>
                 <label className="block text-[11px] font-bold uppercase text-zinc-400 mb-1">

@@ -16,6 +16,7 @@ import {
   Volume2,
   VolumeX,
   Coins,
+  AlertTriangle,
   type LucideIcon,
 } from 'lucide-react';
 import { useAdminAuth } from '@/lib/adminAuth';
@@ -82,21 +83,23 @@ export default function AdminDashboard() {
   // Suscripciones en tiempo real a todas las colecciones
   useEffect(() => {
     setIsMuted(getAlarmMuted());
-    const onError = (e: Error) => {
-      console.warn('[admin] listener:', e);
-      setLoadError(
-        e.message.includes('permission')
-          ? 'Firestore rechazó la lectura. Publica las nuevas firestore.rules (firebase deploy --only firestore:rules).'
-          : e.message
-      );
+    const onError = (name: string) => (e: Error) => {
+      console.warn(`[admin] listener ${name}:`, e);
+      if (e.message.includes('permission') || (e as unknown as { code?: string })?.code === 'permission-denied') {
+        setLoadError(
+          `Firestore denegó la lectura en '${name}'. Debes copiar las reglas de 'firestore.rules' en Firebase Console (Firestore Database > Reglas) y pulsar 'Publicar'.`
+        );
+      } else {
+        setLoadError(`${name}: ${e.message}`);
+      }
     };
     const unsubs = [
-      listenUsers((users) => setData((d) => ({ ...d, users })), onError),
-      listenTrips((trips) => setData((d) => ({ ...d, trips })), onError),
-      listenBookings((bookings) => setData((d) => ({ ...d, bookings })), onError),
-      listenPayments((payments) => setData((d) => ({ ...d, payments })), onError),
-      listenReports((reports) => setData((d) => ({ ...d, reports })), onError),
-      listenReviews((reviews) => setData((d) => ({ ...d, reviews })), onError),
+      listenUsers((users) => setData((d) => ({ ...d, users })), onError('usuarios')),
+      listenTrips((trips) => setData((d) => ({ ...d, trips })), onError('viajes')),
+      listenBookings((bookings) => setData((d) => ({ ...d, bookings })), onError('reservas')),
+      listenPayments((payments) => setData((d) => ({ ...d, payments })), onError('pagos')),
+      listenReports((reports) => setData((d) => ({ ...d, reports })), onError('reportes')),
+      listenReviews((reviews) => setData((d) => ({ ...d, reviews })), onError('resenas')),
       listenBcvRate((rate) => setBcvRate(rate.rate)),
     ];
     return () => unsubs.forEach((u) => u());
@@ -215,8 +218,18 @@ export default function AdminDashboard() {
 
         <main className="min-w-0 flex-1 pb-16">
           {loadError && (
-            <div className="mb-4 rounded-xl border border-red-500/40 bg-red-950/40 p-3 text-xs text-red-300">
-              {loadError}
+            <div className="mb-4 flex items-start justify-between gap-3 rounded-xl border border-red-500/40 bg-red-950/40 p-3 text-xs text-red-300">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 shrink-0 text-red-400 mt-0.5" />
+                <span>{loadError}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setLoadError(null)}
+                className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold text-red-400 hover:bg-red-900/50"
+              >
+                Cerrar ✕
+              </button>
             </div>
           )}
 
