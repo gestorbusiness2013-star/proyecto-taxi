@@ -4,6 +4,16 @@
 
 export type UserRole = 'driver' | 'passenger';
 
+/**
+ * Estado de la cuenta, gestionado por el administrador.
+ * - pending: chofer registrado esperando verificación de documentos.
+ * - approved: cuenta activa.
+ * - rejected: solicitud de chofer rechazada.
+ * - suspended: cuenta bloqueada por la administración.
+ * Si el campo no existe (cuentas antiguas) se considera `approved`.
+ */
+export type AccountStatus = 'pending' | 'approved' | 'rejected' | 'suspended';
+
 export interface Vehicle {
   model: string;
   plate: string;
@@ -21,6 +31,14 @@ export interface User {
   isSubscribed?: boolean;
   /** Vehículo registrado. Solo aplica a choferes. */
   vehicle?: Vehicle;
+  /** Estado de la cuenta (lo modifica solo el administrador). */
+  status?: AccountStatus;
+  /** Motivo de rechazo o suspensión, visible para la administración. */
+  statusReason?: string;
+  /** Fecha de vencimiento de la suscripción mensual del chofer (ISO 8601). */
+  subscriptionExpiresAt?: string;
+  /** Fecha de registro (ISO 8601). */
+  createdAt?: string;
 }
 
 export type TripStatus = 'scheduled' | 'in_route' | 'completed' | 'cancelled';
@@ -52,6 +70,11 @@ export interface Trip {
   status: TripStatus;
   /** Coordenadas y rumbo en tiempo real (estilo Flightradar24) */
   currentLocation?: GeoLocation;
+  /**
+   * Moderación del administrador. Si es `rejected` el viaje se oculta a los
+   * pasajeros. Ausente = visible (los viajes se publican sin revisión previa).
+   */
+  moderation?: 'approved' | 'rejected';
 }
 
 export type BookingStatus = 'confirmed' | 'boarded' | 'cancelled';
@@ -68,4 +91,54 @@ export interface Booking {
   status: BookingStatus;
   /** Fecha de creación en ISO 8601 */
   createdAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Administración: pagos de suscripción y reportes
+// ---------------------------------------------------------------------------
+
+export type PaymentMethod = 'pago_movil' | 'zelle' | 'transferencia' | 'efectivo' | 'binance';
+
+export type PaymentStatus = 'verified' | 'void';
+
+/** Pago de la suscripción mensual de un chofer, registrado por el administrador. */
+export interface Payment {
+  id: string;
+  driverId: string;
+  driverName: string;
+  /** Monto en USD */
+  amount: number;
+  method: PaymentMethod;
+  /** Número de referencia bancaria / comprobante */
+  reference: string;
+  /** Cantidad de meses que cubre el pago */
+  months: number;
+  /** Nuevo vencimiento de la suscripción tras aplicar el pago (ISO 8601) */
+  coversUntil: string;
+  status: PaymentStatus;
+  notes?: string;
+  /** Email del administrador que registró el pago */
+  recordedBy: string;
+  createdAt: string;
+}
+
+export type ReportType = 'sos' | 'complaint' | 'dispute';
+export type ReportStatus = 'open' | 'in_progress' | 'resolved';
+
+/** Alerta S.O.S., queja o disputa enviada desde la app. */
+export interface Report {
+  id: string;
+  type: ReportType;
+  status: ReportStatus;
+  message: string;
+  reporterId?: string;
+  reporterName?: string;
+  reporterPhone?: string;
+  tripId?: string;
+  bookingId?: string;
+  location?: { lat: number; lng: number };
+  /** Nota interna del administrador al gestionar el reporte */
+  adminNote?: string;
+  createdAt: string;
+  updatedAt?: string;
 }

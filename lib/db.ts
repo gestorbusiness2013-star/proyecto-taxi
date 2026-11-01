@@ -4,6 +4,7 @@ import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app';
 import {
   collection,
   doc,
+  getDoc,
   getFirestore,
   onSnapshot,
   query,
@@ -14,7 +15,7 @@ import {
   type Firestore,
   type Unsubscribe,
 } from 'firebase/firestore';
-import type { Booking, Trip, TripStatus, User, GeoLocation } from './types';
+import type { Booking, Trip, TripStatus, User, GeoLocation, Report, ReportType } from './types';
 
 // ---------------------------------------------------------------------------
 // Inicialización (lazy, para no romper el build si faltan variables de entorno)
@@ -55,15 +56,18 @@ function safeListen(
   }
 }
 
-export function getDb(): Firestore {
-  if (_db) return _db;
+export function getFirebaseApp(): FirebaseApp {
   if (!firebaseConfig.projectId || !firebaseConfig.apiKey) {
     throw new Error(
       'Firebase no está configurado. Define las variables NEXT_PUBLIC_FIREBASE_* en .env.local (ver .env.example).'
     );
   }
-  const app: FirebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
-  _db = getFirestore(app);
+  return getApps().length ? getApp() : initializeApp(firebaseConfig);
+}
+
+export function getDb(): Firestore {
+  if (_db) return _db;
+  _db = getFirestore(getFirebaseApp());
   return _db;
 }
 
@@ -71,7 +75,15 @@ export const COLLECTIONS = {
   users: 'users',
   trips: 'trips',
   bookings: 'bookings',
+  payments: 'payments',
+  reports: 'reports',
+  admins: 'admins',
 } as const;
+
+/** Los viajes rechazados por moderación no se muestran a los pasajeros. */
+function isVisibleTrip(t: Trip): boolean {
+  return t.moderation !== 'rejected';
+}
 
 // ---------------------------------------------------------------------------
 // Errores de dominio
@@ -139,6 +151,7 @@ export function getLiveTrips(
       (snap) => {
         const trips = snap.docs
           .map((d) => ({ ...(d.data() as Omit<Trip, 'id'>), id: d.id }))
+          .filter(isVisibleTrip)
           .sort((a, b) => a.departureTime.localeCompare(b.departureTime));
         onData(trips);
       },
@@ -448,12 +461,85 @@ export function getAllActiveTrips(
       (snap) => {
         const trips = snap.docs
           .map((d) => ({ ...(d.data() as Omit<Trip, 'id'>), id: d.id }))
-          .filter((t) => t.status === 'scheduled' || t.status === 'in_route');
+          .filter((t) => (t.status === 'scheduled' || t.status === 'in_route') && isVisibleTrip(t));
         onData(trips);
       },
       (err) => onError?.(err)
     );
   }, onError);
+}
+
+// ---------------------------------------------------------------------------
+// 8. Registro de perfiles (para que la administración vea las cuentas)
+// ---------------------------------------------------------------------------
+
+/**
+ * Guarda el perfil del usuario en Firestore. Los choferes nuevos quedan en
+ * estado `pending` hasta que el administrador verifique sus documentos.
+ * Si el perfil ya existe solo se actualizan los datos de contacto: el estado y
+ * la suscripción únicamente los cambia el administrador (ver firestore.rules).
+ */
+export async function registerUserProfile(user: User): Promise<void> {
+  if (!isFirebaseConfigured()) return;
+  const db = getDb();
+  const ref = doc(db, COLLECTIONS.users, user.id);
+  const snap = await getDoc(ref);
+
+  const contact = {
+    name: user.name,
+    phone: user.phone,
+    dni: user.dni,
+    role: user.role,
+    ...(user.vehicle ? { vehicle: user.vehicle } : {}),
+  };
+
+  if (snap.exists()) {
+    await updateDoc(ref, contact);
+    return;
+  }
+
+  await setDoc(ref, {
+    ...contact,
+    id: user.id,
+    status: user.role === 'driver' ? 'pending' : 'approved',
+    isSubscribed: false,
+    createdAt: new Date().toISOString(),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// 9. Alertas S.O.S. y quejas
+// ---------------------------------------------------------------------------
+
+export interface CreateReportInput {
+  type: ReportType;
+  message: string;
+  reporter?: Pick<User, 'id' | 'name' | 'phone'> | null;
+  tripId?: string;
+  location?: { lat: number; lng: number };
+}
+
+export async function createReport(input: CreateReportInput): Promise<string> {
+  const db = getDb();
+  const ref = doc(collection(db, COLLECTIONS.reports));
+  const report: Report = {
+    id: ref.id,
+    type: input.type,
+    status: 'open',
+    message: input.message.trim().slice(0, 2000),
+    createdAt: new Date().toISOString(),
+    ...(input.reporter
+      ? {
+          reporterId: input.reporter.id,
+          reporterName: input.reporter.name,
+          reporterPhone: input.reporter.phone,
+        }
+      : {}),
+    ...(input.tripId ? { tripId: input.tripId } : {}),
+    ...(input.location ? { location: input.location } : {}),
+  };
+  await setDoc(ref, report);
+  return ref.id;
 }
 
 

@@ -1,14 +1,19 @@
 'use client';
 
-import { Shield, PhoneCall, AlertTriangle, X, MapPin, Share2 } from 'lucide-react';
+import { Shield, PhoneCall, AlertTriangle, X, MapPin, Share2, Radio, CheckCircle2 } from 'lucide-react';
 import { useState } from 'react';
+import { useAuth } from '@/lib/auth';
+import { createReport } from '@/lib/db';
 
 interface SosModalProps {
   onClose: () => void;
 }
 
 export default function SosModal({ onClose }: SosModalProps) {
+  const { user } = useAuth();
   const [copied, setCopied] = useState(false);
+  const [isSendingAlert, setIsSendingAlert] = useState(false);
+  const [alertSent, setAlertSent] = useState(false);
 
   const emergencyContacts = [
     {
@@ -30,6 +35,36 @@ export default function SosModal({ onClose }: SosModalProps) {
       note: 'Autopista Regional del Centro y peajes',
     },
   ];
+
+  const handleBroadcastSos = async () => {
+    setIsSendingAlert(true);
+    let location: { lat: number; lng: number } | undefined;
+
+    if (typeof navigator !== 'undefined' && 'geolocation' in navigator) {
+      try {
+        const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 7000 });
+        });
+        location = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      } catch {
+        // Continue even if GPS timed out
+      }
+    }
+
+    try {
+      await createReport({
+        type: 'sos',
+        message: 'Alerta de auxilio vial y seguridad emitida desde la aplicación en carretera.',
+        reporter: user,
+        location,
+      });
+      setAlertSent(true);
+    } catch (e) {
+      console.warn('Error sending SOS report:', e);
+    } finally {
+      setIsSendingAlert(false);
+    }
+  };
 
   const handleShareLocation = () => {
     if (navigator.share) {
@@ -88,22 +123,41 @@ export default function SosModal({ onClose }: SosModalProps) {
           ))}
         </div>
 
-        <div className="mt-4 pt-3 border-t border-zinc-800 flex gap-2">
-          <button
-            type="button"
-            onClick={handleShareLocation}
-            className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 py-2.5 px-3 text-xs font-semibold text-amber-400 hover:bg-amber-500/20 active:scale-95 transition"
-          >
-            <Share2 className="h-4 w-4" />
-            <span>{copied ? '¡Copiado!' : 'Compartir con Familiar'}</span>
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-xs font-medium text-zinc-300 hover:bg-zinc-700"
-          >
-            Cerrar
-          </button>
+        <div className="mt-4 pt-3 border-t border-zinc-800 space-y-2">
+          {alertSent ? (
+            <div className="flex items-center justify-center gap-2 rounded-xl border border-emerald-500/50 bg-emerald-950/50 p-2.5 text-xs font-bold text-emerald-300">
+              <CheckCircle2 className="h-4 w-4" />
+              <span>Alerta S.O.S. enviada al Panel de Control</span>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={handleBroadcastSos}
+              disabled={isSendingAlert}
+              className="w-full flex items-center justify-center gap-2 rounded-xl border border-red-500 bg-red-600 hover:bg-red-500 py-2.5 px-3 text-xs font-black text-white shadow-lg shadow-red-600/30 active:scale-95 transition"
+            >
+              <Radio className="h-4 w-4 animate-pulse" />
+              <span>{isSendingAlert ? 'Transmitiendo ubicación GPS...' : 'Transmitir Alerta S.O.S. a la Central'}</span>
+            </button>
+          )}
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleShareLocation}
+              className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 py-2.5 px-3 text-xs font-semibold text-amber-400 hover:bg-amber-500/20 active:scale-95 transition"
+            >
+              <Share2 className="h-4 w-4" />
+              <span>{copied ? '¡Copiado!' : 'Compartir con Familiar'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-xs font-medium text-zinc-300 hover:bg-zinc-700"
+            >
+              Cerrar
+            </button>
+          </div>
         </div>
       </div>
     </div>

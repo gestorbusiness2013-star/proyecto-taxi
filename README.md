@@ -85,3 +85,37 @@ Antes o después del despliegue, ve a:
 - **Mapa en Vivo Estilo Flightradar**: Integración de Leaflet con la capa cartográfica **Esri World Dark Gray Canvas** (100% libre sin marcas de agua ni API Keys) y vehículos *Top-Down GPS* con animación de rumbo (*heading*) y radar en vivo.
 - **Reserva Atómica y Boletos**: Transacciones atómicas de puestos con generación de PIN de abordaje de 4 dígitos y enlace directo a WhatsApp.
 - **Panel de Choferes**: Validación de abordaje por PIN, monitor de ruta activa y conmutador de estados en carretera.
+- **Panel de Control de Administrador (`/admin`)**: Gestión integral de solicitudes, control de viajes, finanzas y reportes de auxilio vial.
+
+---
+
+## 🛡️ 5. Panel de Control de Administrador (`/admin`)
+
+La plataforma cuenta con un panel administrativo protegido en la ruta **`/admin`** (con login dedicado en **`/admin/login`**).
+
+### Módulos y Capacidades
+1. **Resumen en Tiempo Real**: Estadísticas de solicitudes pendientes, ingresos del mes, choferes al día vs. vencidos, viajes en carretera, reservas del día y feed de actividad reciente.
+2. **Control de Solicitudes**: Aprobación o rechazo (con motivo documentado) de choferes nuevos con revisión de cédula (DNI) y datos del vehículo.
+3. **Gestión de Usuarios**: Directorio de pasajeros y conductores con capacidad de suspensión, reactivación y desactivación de suscripción.
+4. **Supervisión y Moderación de Viajes**: Visualización de rutas, puestos ocupados y pasajeros; moderación (ocultar viaje) y cancelación administrativa de viajes.
+5. **Control de Reservas y Boletos**: Auditoría de PINs de abordaje y cancelación atómica de reservas con reposición automática e instantánea de puestos disponibles al viaje.
+6. **Finanzas y Membresías**: Registro de pagos de suscripción mensual de choferes (Pago Móvil, Zelle, Transferencia, Binance USDT, Efectivo USD), cálculo de vencimientos, anulación contable de pagos y exportación de reportes a **Excel (CSV)**.
+7. **Centro de Alertas S.O.S. & Quejas**: Recepción de emergencias emitidas en carretera con geolocalización GPS, enlace a WhatsApp del afectado y gestión de estados (Abierto, En Proceso, Resuelto) con notas internas.
+
+### Cómo configurar el primer Administrador en Firebase
+1. **Habilitar Email/Password en Firebase**:
+   - En [Firebase Console](https://console.firebase.google.com), ve a **Authentication** → **Sign-in method** → activa **Email/Password**.
+2. **Crear el usuario Administrador**:
+   - En **Authentication** → pestaña **Users** → haz clic en **Add user** e ingresa el correo y contraseña del administrador.
+   - Copia el **User UID** generado.
+3. **Asignar permisos en Firestore**:
+   - En **Firestore Database** → crea la colección **`admins`**.
+   - Crea un documento cuyo **Document ID sea el User UID copiado**.
+   - Agrega los campos:
+     - `role`: `"admin"` (string)
+     - `email`: `"tu-correo@admin.com"` (string)
+4. **Desplegar reglas de Firestore**:
+   ```bash
+   firebase deploy --only firestore:rules
+   ```
+5. Accede a **`http://localhost:3000/admin/login`** e inicia sesión con las credenciales creadas.

@@ -5,16 +5,29 @@ rules_version = '2';
 //   - Asientos válidos (nunca negativos ni superiores al total).
 //   - Reserva atómica: solo se crea si descuenta exactamente sus asientos del viaje (scheduled o in_route).
 //   - Transición de estados permitida: scheduled -> in_route -> completed (o cancelled).
-//   - Prohibido listar reservas completas (protección de PINs).
+//   - Control de administración: usuarios con registro en /admins/{uid} pueden moderar, auditar y gestionar finanzas.
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Helper: verifica si el usuario autenticado es un administrador registrado
+    function isAdmin() {
+      return request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // ---------------- Administradores ----------------
+    match /admins/{adminId} {
+      // Cualquier usuario autenticado puede comprobar si su propio UID está en admins
+      allow read: if request.auth != null;
+      // Solo editable desde Firebase Console
+      allow write: if false;
+    }
+
     // ---------------- Usuarios ----------------
     match /users/{userId} {
       allow read: if true;
-      allow create, update: if validUser(request.resource.data);
-      allow delete: if false;
+      allow create, update: if isAdmin() || validUser(request.resource.data);
+      allow delete: if isAdmin();
     }
 
     function validUser(u) {
@@ -27,9 +40,9 @@ service cloud.firestore {
     // ---------------- Viajes ----------------
     match /trips/{tripId} {
       allow read: if true;
-      allow create: if validNewTrip(request.resource.data);
-      allow update: if validNewTrip(request.resource.data) || seatsDecrease() || statusAdvance();
-      allow delete: if false;
+      allow create: if isAdmin() || validNewTrip(request.resource.data);
+      allow update: if isAdmin() || validNewTrip(request.resource.data) || seatsDecrease() || statusAdvance();
+      allow delete: if isAdmin();
     }
 
     function validNewTrip(t) {
@@ -62,18 +75,14 @@ service cloud.firestore {
 
     // ---------------- Reservas ----------------
     match /bookings/{bookingId} {
-      // Lectura de reservas para pasajeros y choferes
       allow read: if true;
-
-      // La reserva debe crearse en la MISMA transacción que descuenta los asientos.
-      allow create: if validNewBooking(bookingId, request.resource.data);
-
-      // Solo se permite: confirmed -> boarded (chofer valida PIN) o confirmed -> cancelled.
-      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+      allow create: if isAdmin() || validNewBooking(bookingId, request.resource.data);
+      allow update: if isAdmin() || (
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
         && resource.data.status == 'confirmed'
-        && request.resource.data.status in ['boarded', 'cancelled'];
-
-      allow delete: if false;
+        && request.resource.data.status in ['boarded', 'cancelled']
+      );
+      allow delete: if isAdmin();
     }
 
     function validNewBooking(bookingId, b) {
@@ -88,6 +97,20 @@ service cloud.firestore {
         && b.passengerId != before.driverId
         && before.status in ['scheduled', 'in_route']
         && after.availableSeats == before.availableSeats - b.seatsBooked;
+    }
+
+    // ---------------- Finanzas / Pagos de Suscripción ----------------
+    match /payments/{paymentId} {
+      allow read, write: if isAdmin();
+    }
+
+    // ---------------- Reportes y S.O.S. ----------------
+    match /reports/{reportId} {
+      // Cualquier pasajero o chofer puede emitir una alerta S.O.S. o queja
+      allow create: if request.resource.data.type in ['sos', 'complaint', 'dispute']
+        && request.resource.data.message is string;
+      // Solo el administrador puede leer, gestionar y resolver reportes
+      allow read, update, delete: if isAdmin();
     }
   }
 }

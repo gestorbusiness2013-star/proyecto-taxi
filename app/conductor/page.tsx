@@ -35,6 +35,7 @@ import {
   validateBoardingPin,
 } from '@/lib/db';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
+import { useAuth } from '@/lib/auth';
 
 const DRIVER_USER: User = {
   id: 'driver-alejandro-1',
@@ -64,8 +65,17 @@ const COMMON_CITIES = [
 ];
 
 export default function ConductorPage() {
+  const { user: authUser } = useAuth();
   // 1. Estado del Usuario y Validación de Suscripción
-  const [currentUser, setCurrentUser] = useState<User>(DRIVER_USER);
+  const [currentUser, setCurrentUser] = useState<User>(
+    authUser && authUser.role === 'driver' ? authUser : DRIVER_USER
+  );
+
+  useEffect(() => {
+    if (authUser && authUser.role === 'driver') {
+      setCurrentUser(authUser);
+    }
+  }, [authUser]);
 
   // Lista de viajes del chofer en tiempo real
   const [driverTrips, setDriverTrips] = useState<Trip[]>([]);
@@ -310,6 +320,32 @@ export default function ConductorPage() {
 
       {/* Contenedor Principal Mobile-First */}
       <main className="mx-auto w-full max-w-md flex-1 px-4 pt-3 pb-safe space-y-5">
+        {/* Aviso si la cuenta está pendiente de aprobación por el administrador */}
+        {currentUser.status === 'pending' && (
+          <div className="rounded-2xl border border-amber-500/50 bg-amber-500/10 p-4 text-center space-y-2">
+            <span className="rounded-full bg-amber-500/20 border border-amber-500/40 px-2.5 py-0.5 text-[10px] font-black uppercase text-amber-300">
+              Verificación en Curso
+            </span>
+            <h3 className="text-sm font-bold text-white">Solicitud de Chofer Pendiente</h3>
+            <p className="text-xs text-zinc-300">
+              Tus documentos y vehículo están siendo revisados por la administración. Podrás publicar viajes en cuanto tu cuenta sea aprobada.
+            </p>
+          </div>
+        )}
+
+        {/* Aviso si la cuenta está suspendida */}
+        {currentUser.status === 'suspended' && (
+          <div className="rounded-2xl border border-red-500/50 bg-red-950/40 p-4 text-center space-y-2">
+            <span className="rounded-full bg-red-500/20 border border-red-500/40 px-2.5 py-0.5 text-[10px] font-black uppercase text-red-300">
+              Cuenta Suspendida
+            </span>
+            <h3 className="text-sm font-bold text-white">Acceso Desactivado</h3>
+            <p className="text-xs text-zinc-300">
+              {currentUser.statusReason || 'Tu cuenta ha sido suspendida temporalmente por la administración.'}
+            </p>
+          </div>
+        )}
+
         {/* REQUISITO 1: AVISO BLOQUEANTE SI user.isSubscribed === false */}
         {!currentUser.isSubscribed && (
           <div className="relative overflow-hidden rounded-3xl border-2 border-red-500/60 bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 p-6 shadow-2xl text-center space-y-4 animate-in fade-in zoom-in-95 duration-300">

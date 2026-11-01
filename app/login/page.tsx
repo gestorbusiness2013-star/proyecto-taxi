@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useAuth, DEMO_PASSENGER, DEMO_DRIVER } from '@/lib/auth';
 import type { User } from '@/lib/types';
+import { registerUserProfile } from '@/lib/db';
 
 function LoginForm() {
   const router = useRouter();
@@ -62,11 +63,13 @@ function LoginForm() {
     };
 
     login(newUser);
+    registerUserProfile(newUser).catch((err) => console.warn('Could not sync user profile:', err));
     router.push(redirectUrl);
   };
 
   const handleQuickLogin = (demoUser: User) => {
     login(demoUser);
+    registerUserProfile(demoUser).catch((err) => console.warn('Could not sync demo user:', err));
     router.push(redirectUrl);
   };
 

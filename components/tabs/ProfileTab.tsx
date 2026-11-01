@@ -189,7 +189,7 @@ export default function ProfileTab() {
       </div>
 
       {/* PWA & App Info */}
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-xs space-y-2">
+      <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-xs space-y-3">
         <div className="flex items-center justify-between">
           <span className="font-bold text-zinc-300">Proyecto Taxi PWA</span>
           <span className="rounded bg-amber-500/20 px-2 py-0.5 text-[10px] font-mono font-bold text-amber-400">
@@ -199,6 +199,18 @@ export default function ProfileTab() {
         <p className="text-[11px] text-zinc-500">
           Diseñado para viajes interurbanos en Venezuela. Optimizado para Vercel y funcionamiento offline en carreteras nacionales.
         </p>
+        <div className="pt-2 border-t border-zinc-800/80">
+          <a
+            href="/admin"
+            className="flex items-center justify-between text-zinc-400 hover:text-amber-400 text-xs font-semibold transition"
+          >
+            <span className="flex items-center gap-1.5">
+              <ShieldCheck className="h-4 w-4 text-amber-500" />
+              <span>Portal de Administración y Finanzas</span>
+            </span>
+            <ChevronRight className="h-4 w-4" />
+          </a>
+        </div>
       </div>
     </div>
   );
