@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Wallet,
   PlusCircle,
@@ -12,6 +12,10 @@ import {
   CheckCircle2,
   Clock,
   Phone,
+  Coins,
+  MessageCircle,
+  RefreshCw,
+  Edit2,
 } from 'lucide-react';
 import type { Payment, PaymentMethod, User } from '@/lib/types';
 import {
@@ -22,6 +26,14 @@ import {
   subscriptionState,
   voidPayment,
 } from '@/lib/admin';
+import {
+  BcvConfig,
+  DEFAULT_BCV_RATE,
+  formatBs,
+  listenBcvRate,
+  updateBcvRate,
+} from '@/lib/bcv';
+import { WhatsAppTemplates, buildWhatsAppLink } from '@/lib/whatsapp';
 import {
   ActionButton,
   Badge,
@@ -53,8 +65,32 @@ export default function FinanceSection({
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const { busyId, message, run } = useAdminAction();
 
-  // Choferes registrados
-  const drivers = users.filter((u) => u.role === 'driver');
+  // Estado de Tasa BCV Oficial
+  const [bcvConfig, setBcvConfig] = useState<BcvConfig>({
+    rate: DEFAULT_BCV_RATE,
+    lastUpdated: new Date().toISOString(),
+    source: 'manual',
+  });
+  const [isEditingBcv, setIsEditingBcv] = useState(false);
+  const [bcvInputRate, setBcvInputRate] = useState<number>(DEFAULT_BCV_RATE);
+
+  useEffect(() => {
+    const unsub = listenBcvRate((cfg) => {
+      setBcvConfig(cfg);
+      setBcvInputRate(cfg.rate);
+    });
+    return () => unsub();
+  }, []);
+
+  const handleSaveBcvRate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await run(
+      'bcv-update',
+      () => updateBcvRate(Number(bcvInputRate), adminEmail),
+      `Tasa oficial BCV actualizada a Bs. ${bcvInputRate} / USD.`
+    );
+    setIsEditingBcv(false);
+  };
 
   // Formulario nuevo pago
   const [selectedDriverId, setSelectedDriverId] = useState('');
@@ -67,6 +103,9 @@ export default function FinanceSection({
   // Anulación de pago
   const [voidingPayment, setVoidingPayment] = useState<Payment | null>(null);
   const [voidReason, setVoidReason] = useState('');
+
+  // Choferes del sistema
+  const drivers = users.filter((u) => u.role === 'driver');
 
   // Estadísticas financieras
   const verifiedPayments = payments.filter((p) => p.status === 'verified');
@@ -190,6 +229,42 @@ export default function FinanceSection({
       />
 
       <ActionMessage message={message} />
+
+      {/* Barra de Tasa Oficial BCV */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-zinc-900 to-zinc-950 p-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+            <Coins className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black uppercase tracking-wider text-amber-400">
+                Tasa Oficial BCV
+              </span>
+              <span className="text-[10px] text-zinc-500">
+                Actualizado: {fmtDateTime(bcvConfig.lastUpdated)}
+              </span>
+            </div>
+            <div className="text-lg font-black text-white">
+              Bs. {bcvConfig.rate.toLocaleString('es-VE', { minimumFractionDigits: 2 })} <span className="text-xs text-zinc-400 font-normal">/ USD</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-zinc-400 hidden sm:inline">
+            Cuota $10 USD = <strong className="text-emerald-400">{formatBs(10, bcvConfig.rate)}</strong>
+          </span>
+          <button
+            type="button"
+            onClick={() => setIsEditingBcv(true)}
+            className="flex items-center gap-1.5 rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs font-bold text-zinc-200 hover:bg-zinc-700 transition active:scale-95"
+          >
+            <Edit2 className="h-3.5 w-3.5 text-amber-400" />
+            <span>Fijar Tasa BCV</span>
+          </button>
+        </div>
+      </div>
 
       {/* Tarjetas de estadísticas financieras */}
       <div className="grid gap-3 sm:grid-cols-3">
@@ -351,17 +426,37 @@ export default function FinanceSection({
                   {state === 'none' && <Badge tone="zinc">Sin Pago</Badge>}
                 </td>
                 <td className="px-3 py-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedDriverId(d.id);
-                      setShowPaymentModal(true);
-                    }}
-                    className="flex items-center gap-1 rounded-lg border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-[11px] font-bold text-amber-400 hover:bg-amber-500/20"
-                  >
-                    <PlusCircle className="h-3 w-3" />
-                    <span>Cobrar / Renovar</span>
-                  </button>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedDriverId(d.id);
+                        setShowPaymentModal(true);
+                      }}
+                      className="flex items-center gap-1 rounded-lg border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-[11px] font-bold text-amber-400 hover:bg-amber-500/20"
+                    >
+                      <PlusCircle className="h-3 w-3" />
+                      <span>Cobrar / Renovar</span>
+                    </button>
+
+                    <a
+                      href={buildWhatsAppLink(
+                        d.phone,
+                        WhatsAppTemplates.subscriptionReminder(
+                          d.name,
+                          d.subscriptionExpiresAt ? fmtDate(d.subscriptionExpiresAt) : 'esta semana',
+                          DEFAULT_SUBSCRIPTION_FEE_USD
+                        )
+                      )}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-2 py-1 text-[11px] font-bold text-emerald-400 hover:bg-emerald-500/20"
+                      title="Enviar recordatorio de cobro por WhatsApp"
+                    >
+                      <MessageCircle className="h-3 w-3" />
+                      <span>Recordar</span>
+                    </a>
+                  </div>
                 </td>
               </tr>
             );
@@ -532,6 +627,58 @@ export default function FinanceSection({
           </div>
         </div>
       )}
+
+      {/* Modal Fijar Tasa BCV Oficial */}
+      {isEditingBcv && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-2xl border border-amber-500/40 bg-zinc-950 p-5 shadow-2xl space-y-4">
+            <div className="flex items-center gap-2 text-amber-400">
+              <Coins className="h-5 w-5" />
+              <h3 className="font-bold text-white text-sm">Fijar Tasa Oficial BCV</h3>
+            </div>
+            <p className="text-xs text-zinc-300">
+              Ingresa el valor del dólar oficial publicado por el Banco Central de Venezuela para actualizar los cálculos en toda la plataforma:
+            </p>
+            <form onSubmit={handleSaveBcvRate} className="space-y-3">
+              <div>
+                <label className="block text-[11px] font-bold uppercase text-zinc-400 mb-1">
+                  Bolívares por Dólar (Bs./USD)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-zinc-500 font-mono text-xs">Bs.</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="1"
+                    required
+                    value={bcvInputRate}
+                    onChange={(e) => setBcvInputRate(Number(e.target.value))}
+                    className="w-full rounded-xl border border-zinc-800 bg-zinc-900 pl-10 pr-3 py-2 text-sm text-white font-mono font-bold outline-none focus:border-amber-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsEditingBcv(false)}
+                  className="rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-700"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={busyId === 'bcv-update'}
+                  className="rounded-xl border border-amber-500 bg-amber-500 px-4 py-1.5 text-xs font-black text-zinc-950 hover:bg-amber-400"
+                >
+                  {busyId === 'bcv-update' ? 'Guardando...' : 'Guardar Tasa'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

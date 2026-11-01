@@ -1,9 +1,22 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, X, Car, Phone, Shield, AlertCircle, Clock } from 'lucide-react';
+import {
+  Check,
+  X,
+  Car,
+  Phone,
+  Shield,
+  AlertCircle,
+  Clock,
+  FileText,
+  MessageCircle,
+  Eye,
+  Camera,
+} from 'lucide-react';
 import type { User } from '@/lib/types';
 import { accountStatus, setUserStatus } from '@/lib/admin';
+import { WhatsAppTemplates, buildWhatsAppLink } from '@/lib/whatsapp';
 import {
   ActionButton,
   Badge,
@@ -23,6 +36,7 @@ export default function RequestsSection({ users }: { users: User[] }) {
   const [query, setQuery] = useState('');
   const [rejectingUser, setRejectingUser] = useState<User | null>(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [inspectingDocsDriver, setInspectingDocsDriver] = useState<User | null>(null);
   const { busyId, message, run } = useAdminAction();
 
   // Solicitudes: choferes registrados
@@ -154,6 +168,16 @@ export default function RequestsSection({ users }: { users: User[] }) {
                 </td>
                 <td className="px-3 py-3">
                   <div className="flex flex-wrap items-center gap-1.5">
+                    {/* Botón Ver Documentos y Fotos */}
+                    <button
+                      type="button"
+                      onClick={() => setInspectingDocsDriver(driver)}
+                      className="inline-flex items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-[11px] font-bold text-zinc-300 hover:bg-zinc-700 hover:text-white transition"
+                    >
+                      <Camera className="h-3 w-3 text-amber-400" />
+                      <span>Recaudos</span>
+                    </button>
+
                     {status !== 'approved' && (
                       <ActionButton
                         tone="green"
@@ -164,6 +188,20 @@ export default function RequestsSection({ users }: { users: User[] }) {
                         <span>Aprobar</span>
                       </ActionButton>
                     )}
+
+                    {status === 'approved' && (
+                      <a
+                        href={buildWhatsAppLink(driver.phone, WhatsAppTemplates.driverApproved(driver.name))}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/50 bg-emerald-500/15 px-2.5 py-1.5 text-[11px] font-bold text-emerald-300 hover:bg-emerald-500/25 transition"
+                        title="Enviar bienvenida por WhatsApp"
+                      >
+                        <MessageCircle className="h-3 w-3" />
+                        <span>Aviso WhatsApp</span>
+                      </a>
+                    )}
+
                     {status !== 'rejected' && (
                       <ActionButton
                         tone="red"
@@ -224,6 +262,117 @@ export default function RequestsSection({ users }: { users: User[] }) {
           </div>
         </div>
       )}
+
+      {/* Modal Visor de Documentos y Recaudos */}
+      {inspectingDocsDriver && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-zinc-950 p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+              <div>
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Camera className="h-4 w-4 text-amber-400" />
+                  <span>Recaudos de: {inspectingDocsDriver.name}</span>
+                </h3>
+                <p className="text-xs text-zinc-400">
+                  Cédula: {inspectingDocsDriver.dni} · Teléfono: {inspectingDocsDriver.phone}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setInspectingDocsDriver(null)}
+                className="rounded-lg p-1 text-zinc-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 text-xs">
+              {/* Cédula */}
+              <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 space-y-2">
+                <span className="font-bold text-zinc-300 block">1. Cédula de Identidad</span>
+                {inspectingDocsDriver.documents?.idCardUrl ? (
+                  <img
+                    src={inspectingDocsDriver.documents.idCardUrl}
+                    alt="Cédula"
+                    className="w-full h-32 object-cover rounded-lg border border-zinc-800"
+                  />
+                ) : (
+                  <div className="h-32 flex flex-col items-center justify-center rounded-lg border border-dashed border-zinc-800 text-zinc-500 text-[11px] text-center p-2">
+                    <span>Documento registrado por C.I.</span>
+                    <span className="font-mono text-zinc-400 font-bold mt-1">{inspectingDocsDriver.dni}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Licencia */}
+              <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 space-y-2">
+                <span className="font-bold text-zinc-300 block">2. Licencia de Conducir</span>
+                {inspectingDocsDriver.documents?.driverLicenseUrl ? (
+                  <img
+                    src={inspectingDocsDriver.documents.driverLicenseUrl}
+                    alt="Licencia"
+                    className="w-full h-32 object-cover rounded-lg border border-zinc-800"
+                  />
+                ) : (
+                  <div className="h-32 flex flex-col items-center justify-center rounded-lg border border-dashed border-zinc-800 text-zinc-500 text-[11px] text-center p-2">
+                    <span>Licencia 4ta/5ta Grado</span>
+                    <span className="text-amber-400 text-[10px] mt-1">Verificación presencial / datos</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Carnet de Circulación */}
+              <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 space-y-2">
+                <span className="font-bold text-zinc-300 block">3. Carnet de Circulación / Título</span>
+                {inspectingDocsDriver.documents?.vehicleRegistrationUrl ? (
+                  <img
+                    src={inspectingDocsDriver.documents.vehicleRegistrationUrl}
+                    alt="Carnet"
+                    className="w-full h-32 object-cover rounded-lg border border-zinc-800"
+                  />
+                ) : (
+                  <div className="h-32 flex flex-col items-center justify-center rounded-lg border border-dashed border-zinc-800 text-zinc-500 text-[11px] text-center p-2">
+                    <span>Placa registrada:</span>
+                    <span className="font-mono text-amber-400 font-bold mt-1">
+                      {inspectingDocsDriver.vehicle?.plate || 'Pendiente'}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Foto del Carro */}
+              <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 space-y-2">
+                <span className="font-bold text-zinc-300 block">4. Foto del Vehículo</span>
+                {inspectingDocsDriver.documents?.vehiclePhotoUrl ? (
+                  <img
+                    src={inspectingDocsDriver.documents.vehiclePhotoUrl}
+                    alt="Vehículo"
+                    className="w-full h-32 object-cover rounded-lg border border-zinc-800"
+                  />
+                ) : (
+                  <div className="h-32 flex flex-col items-center justify-center rounded-lg border border-dashed border-zinc-800 text-zinc-500 text-[11px] text-center p-2">
+                    <span>Modelo declarado:</span>
+                    <span className="font-semibold text-zinc-300 mt-1">
+                      {inspectingDocsDriver.vehicle ? `${inspectingDocsDriver.vehicle.model} (${inspectingDocsDriver.vehicle.color})` : 'No especificado'}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-zinc-800">
+              <button
+                type="button"
+                onClick={() => setInspectingDocsDriver(null)}
+                className="rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-2 text-xs font-semibold text-zinc-300 hover:bg-zinc-700"
+              >
+                Cerrar Visor
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

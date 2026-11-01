@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Ban, KeyRound, Phone, MessageCircle, MapPin, Users, Calendar } from 'lucide-react';
 import type { Booking, Trip } from '@/lib/types';
 import { adminCancelBooking } from '@/lib/admin';
+import { WhatsAppTemplates, buildWhatsAppLink } from '@/lib/whatsapp';
 import {
   ActionButton,
   Badge,
@@ -100,11 +101,21 @@ export default function BookingsSection({
                   <div className="flex items-center gap-1.5 text-xs text-zinc-300">
                     <span className="font-mono">{b.passengerPhone}</span>
                     <a
-                      href={`https://wa.me/${cleanPhone}`}
+                      href={buildWhatsAppLink(
+                        b.passengerPhone,
+                        WhatsAppTemplates.bookingConfirmation(
+                          b.passengerName,
+                          trip?.origin || 'Origen',
+                          trip?.destination || 'Destino',
+                          b.boardingPin,
+                          trip?.driverName || 'Conductor',
+                          b.seatsBooked
+                        )
+                      )}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-emerald-400 hover:text-emerald-300"
-                      title="Contactar por WhatsApp"
+                      title="Enviar boleto y PIN por WhatsApp"
                     >
                       <MessageCircle className="h-3.5 w-3.5" />
                     </a>
@@ -163,3 +174,4 @@ export default function BookingsSection({
     </div>
   );
 }
+

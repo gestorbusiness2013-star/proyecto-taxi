@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import type { Report, ReportStatus, ReportType } from '@/lib/types';
 import { updateReport } from '@/lib/admin';
+import { WhatsAppTemplates, buildWhatsAppLink } from '@/lib/whatsapp';
 import {
   ActionButton,
   Badge,
@@ -142,13 +143,19 @@ export default function ReportsSection({ reports }: { reports: Report[] }) {
                     <div className="flex items-center gap-1.5 text-xs text-zinc-300 mt-0.5">
                       <span className="font-mono">{r.reporterPhone}</span>
                       <a
-                        href={`https://wa.me/${cleanPhone}`}
+                        href={buildWhatsAppLink(
+                          r.reporterPhone,
+                          r.type === 'sos'
+                            ? WhatsAppTemplates.sosResponse(r.reporterName || 'Usuario')
+                            : `Hola ${r.reporterName || ''}, te contactamos de Proyecto Taxi respecto a tu reporte.`
+                        )}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-emerald-400 hover:text-emerald-300"
-                        title="Abrir WhatsApp"
+                        className="text-emerald-400 hover:text-emerald-300 inline-flex items-center gap-1 font-semibold"
+                        title="Responder por WhatsApp"
                       >
                         <MessageCircle className="h-3.5 w-3.5" />
+                        <span className="text-[10px] hidden sm:inline">WhatsApp</span>
                       </a>
                     </div>
                   )}
@@ -299,3 +306,4 @@ export default function ReportsSection({ reports }: { reports: Report[] }) {
     </div>
   );
 }
+

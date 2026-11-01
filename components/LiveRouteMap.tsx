@@ -23,6 +23,7 @@ import {
 import type { Trip, GeoLocation } from '@/lib/types';
 import { useAuth, DEMO_PASSENGER } from '@/lib/auth';
 import { getAllActiveTrips } from '@/lib/db';
+import { listenBcvRate, DEFAULT_BCV_RATE, formatBs } from '@/lib/bcv';
 
 interface LiveRouteMapProps {
   onSelectTripToBook?: (trip: Trip) => void;
@@ -126,6 +127,12 @@ export default function LiveRouteMap({
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeRoute, setActiveRoute] = useState<string>(selectedRouteFilter);
+  const [bcvRate, setBcvRate] = useState<number>(DEFAULT_BCV_RATE);
+
+  useEffect(() => {
+    const unsub = listenBcvRate((rate) => setBcvRate(rate.rate));
+    return () => unsub();
+  }, []);
 
   // Ficha flotante (Bottom-sheet) del vehículo seleccionado
   const [sheetTrip, setSheetTrip] = useState<Trip | null>(null);
@@ -624,8 +631,8 @@ export default function LiveRouteMap({
                   ${sheetTrip.pricePerSeat}{' '}
                   <span className="text-xs text-zinc-400 font-medium">USD / puesto</span>
                 </div>
-                <div className="text-[10px] text-zinc-500 font-mono">
-                  Ref. Bs. {(sheetTrip.pricePerSeat * 85).toLocaleString('es-VE')}
+                <div className="text-[10px] text-amber-300 font-mono">
+                  Ref. Bs. {formatBs(sheetTrip.pricePerSeat * bcvRate)}
                 </div>
               </div>
 

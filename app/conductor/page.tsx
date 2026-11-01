@@ -25,8 +25,12 @@ import {
   ShieldAlert,
   Navigation,
   Compass,
+  Upload,
+  Camera,
+  FileText,
+  Coins,
 } from 'lucide-react';
-import type { User, Trip, Booking, TripStatus } from '@/lib/types';
+import type { User, Trip, Booking, TripStatus, DriverDocuments } from '@/lib/types';
 import {
   publishTrip,
   getDriverTrips,
@@ -34,6 +38,9 @@ import {
   updateTripStatus,
   validateBoardingPin,
 } from '@/lib/db';
+import { updateDriverDocuments } from '@/lib/admin';
+import { listenBcvRate, DEFAULT_BCV_RATE, formatBs } from '@/lib/bcv';
+import { getMeetingPointsForCity } from '@/lib/meetingPoints';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { useAuth } from '@/lib/auth';
 
@@ -95,6 +102,20 @@ export default function ConductorPage() {
   const [pricePerSeat, setPricePerSeat] = useState(25);
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishMessage, setPublishMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [bcvRate, setBcvRate] = useState<number>(DEFAULT_BCV_RATE);
+
+  // Documentos de Conductor (Verificación de Recaudos)
+  const [documents, setDocuments] = useState<DriverDocuments>(
+    currentUser.documents || {
+      idCardUrl: '',
+      driverLicenseUrl: '',
+      vehicleRegistrationUrl: '',
+      vehiclePhotoUrl: '',
+      verified: false,
+    }
+  );
+  const [savingDocs, setSavingDocs] = useState(false);
+  const [docsMessage, setDocsMessage] = useState<string | null>(null);
 
   // 3. Estado del Monitor y Validación de PIN
   const [pinInput, setPinInput] = useState('');
@@ -102,6 +123,12 @@ export default function ConductorPage() {
   const [pinResult, setPinResult] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  // Escuchar Tasa Oficial BCV
+  useEffect(() => {
+    const unsubBcv = listenBcvRate((rate) => setBcvRate(rate.rate));
+    return () => unsubBcv();
+  }, []);
 
   // Inicializar fecha y hora por defecto (hoy + 3 horas)
   useEffect(() => {
@@ -582,8 +609,8 @@ export default function ConductorPage() {
                         onChange={(e) => setPricePerSeat(Number(e.target.value))}
                         className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-xs font-bold text-white focus:border-amber-500 focus:outline-none"
                       />
-                      <span className="absolute right-3 top-2 text-[10px] text-zinc-400 font-mono">
-                        USD (Bs. {(pricePerSeat * 85).toLocaleString('es-VE')})
+                      <span className="absolute right-3 top-2 text-[10px] text-amber-300 font-mono">
+                        USD (Bs. {formatBs(pricePerSeat * bcvRate)})
                       </span>
                     </div>
                   </div>
@@ -838,6 +865,173 @@ export default function ConductorPage() {
                   </div>
                 </div>
               )}
+            </section>
+
+            {/* SECCIÓN 4: RECAUDOS Y VERIFICACIÓN DE CONDUCTOR */}
+            <section className="rounded-2xl border border-zinc-800 bg-gradient-to-b from-zinc-900 via-zinc-900 to-[#0B0F17] p-4 shadow-xl space-y-3.5">
+              <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-amber-400" />
+                  <h2 className="text-xs font-black uppercase tracking-wider text-amber-400">
+                    Recaudos de Verificación
+                  </h2>
+                </div>
+                <span className="text-[10px] text-zinc-400">Revisión de Seguridad</span>
+              </div>
+
+              <p className="text-[11px] text-zinc-400">
+                Para mantener la insignia de <strong>Conductor Verificado</strong>, sube o actualiza fotos claras de tus documentos oficiales:
+              </p>
+
+              {docsMessage && (
+                <div className="rounded-xl border border-emerald-500/40 bg-emerald-950/40 p-2.5 text-xs text-emerald-300 flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                  <span>{docsMessage}</span>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-2.5">
+                {/* 1. Cédula */}
+                <div className="rounded-xl border border-white/10 bg-zinc-950 p-2.5 flex flex-col justify-between">
+                  <div>
+                    <span className="text-[10px] font-bold text-zinc-300 block">Cédula de Identidad</span>
+                    <span className="text-[9px] text-zinc-500 block">Laminada o foto clara</span>
+                  </div>
+                  {documents.idCardUrl ? (
+                    <div className="mt-2 relative h-16 w-full rounded-lg overflow-hidden border border-emerald-500/40 bg-zinc-900">
+                      <img src={documents.idCardUrl} alt="Cédula" className="h-full w-full object-cover" />
+                    </div>
+                  ) : (
+                    <label className="mt-2 flex h-14 w-full cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-zinc-700 bg-zinc-900 hover:border-amber-400 transition">
+                      <Camera className="h-4 w-4 text-zinc-400" />
+                      <span className="text-[9px] text-zinc-400 mt-1">Subir foto</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (!f) return;
+                          const r = new FileReader();
+                          r.onload = (ev) => setDocuments((d) => ({ ...d, idCardUrl: ev.target?.result as string }));
+                          r.readAsDataURL(f);
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
+
+                {/* 2. Licencia */}
+                <div className="rounded-xl border border-white/10 bg-zinc-950 p-2.5 flex flex-col justify-between">
+                  <div>
+                    <span className="text-[10px] font-bold text-zinc-300 block">Licencia de Conducir</span>
+                    <span className="text-[9px] text-zinc-500 block">Grado 3 o superior</span>
+                  </div>
+                  {documents.driverLicenseUrl ? (
+                    <div className="mt-2 relative h-16 w-full rounded-lg overflow-hidden border border-emerald-500/40 bg-zinc-900">
+                      <img src={documents.driverLicenseUrl} alt="Licencia" className="h-full w-full object-cover" />
+                    </div>
+                  ) : (
+                    <label className="mt-2 flex h-14 w-full cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-zinc-700 bg-zinc-900 hover:border-amber-400 transition">
+                      <Camera className="h-4 w-4 text-zinc-400" />
+                      <span className="text-[9px] text-zinc-400 mt-1">Subir foto</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (!f) return;
+                          const r = new FileReader();
+                          r.onload = (ev) => setDocuments((d) => ({ ...d, driverLicenseUrl: ev.target?.result as string }));
+                          r.readAsDataURL(f);
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
+
+                {/* 3. Carnet de Circulación */}
+                <div className="rounded-xl border border-white/10 bg-zinc-950 p-2.5 flex flex-col justify-between">
+                  <div>
+                    <span className="text-[10px] font-bold text-zinc-300 block">Carnet Circulación</span>
+                    <span className="text-[9px] text-zinc-500 block">Título o carnet INTT</span>
+                  </div>
+                  {documents.vehicleRegistrationUrl ? (
+                    <div className="mt-2 relative h-16 w-full rounded-lg overflow-hidden border border-emerald-500/40 bg-zinc-900">
+                      <img src={documents.vehicleRegistrationUrl} alt="Carnet Circulación" className="h-full w-full object-cover" />
+                    </div>
+                  ) : (
+                    <label className="mt-2 flex h-14 w-full cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-zinc-700 bg-zinc-900 hover:border-amber-400 transition">
+                      <Camera className="h-4 w-4 text-zinc-400" />
+                      <span className="text-[9px] text-zinc-400 mt-1">Subir foto</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (!f) return;
+                          const r = new FileReader();
+                          r.onload = (ev) => setDocuments((d) => ({ ...d, vehicleRegistrationUrl: ev.target?.result as string }));
+                          r.readAsDataURL(f);
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
+
+                {/* 4. Foto del Vehículo */}
+                <div className="rounded-xl border border-white/10 bg-zinc-950 p-2.5 flex flex-col justify-between">
+                  <div>
+                    <span className="text-[10px] font-bold text-zinc-300 block">Foto del Carro</span>
+                    <span className="text-[9px] text-zinc-500 block">Donde se vea la placa</span>
+                  </div>
+                  {documents.vehiclePhotoUrl ? (
+                    <div className="mt-2 relative h-16 w-full rounded-lg overflow-hidden border border-emerald-500/40 bg-zinc-900">
+                      <img src={documents.vehiclePhotoUrl} alt="Vehículo" className="h-full w-full object-cover" />
+                    </div>
+                  ) : (
+                    <label className="mt-2 flex h-14 w-full cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-zinc-700 bg-zinc-900 hover:border-amber-400 transition">
+                      <Camera className="h-4 w-4 text-zinc-400" />
+                      <span className="text-[9px] text-zinc-400 mt-1">Subir foto</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (!f) return;
+                          const r = new FileReader();
+                          r.onload = (ev) => setDocuments((d) => ({ ...d, vehiclePhotoUrl: ev.target?.result as string }));
+                          r.readAsDataURL(f);
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                disabled={savingDocs}
+                onClick={async () => {
+                  try {
+                    setSavingDocs(true);
+                    setDocsMessage(null);
+                    await updateDriverDocuments(currentUser.id, documents);
+                    setDocsMessage('¡Recaudos guardados y notificados a administración!');
+                  } catch (e: unknown) {
+                    setDocsMessage(e instanceof Error ? e.message : 'Error al guardar.');
+                  } finally {
+                    setSavingDocs(false);
+                  }
+                }}
+                className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 py-2.5 text-xs font-bold text-amber-300 active:scale-95 transition disabled:opacity-50"
+              >
+                <Upload className="h-3.5 w-3.5" />
+                <span>{savingDocs ? 'Guardando recaudos...' : 'Guardar y Enviar Documentos'}</span>
+              </button>
             </section>
           </>
         )}

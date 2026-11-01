@@ -20,6 +20,21 @@ export interface Vehicle {
   color: string;
 }
 
+/** Fotos y recaudos del chofer para verificación por la administración */
+export interface DriverDocuments {
+  /** Foto de la Cédula de Identidad (anverso/reverso) */
+  idCardUrl?: string;
+  /** Foto de la Licencia de Conducir (4ta o 5ta) */
+  driverLicenseUrl?: string;
+  /** Foto del Carnet de Circulación o Título del Carro */
+  vehicleRegistrationUrl?: string;
+  /** Foto frontal del Vehículo mostrando placa */
+  vehiclePhotoUrl?: string;
+  uploadedAt?: string;
+  verified?: boolean;
+  notes?: string;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -31,6 +46,12 @@ export interface User {
   isSubscribed?: boolean;
   /** Vehículo registrado. Solo aplica a choferes. */
   vehicle?: Vehicle;
+  /** Documentos subidos para validación (choferes). */
+  documents?: DriverDocuments;
+  /** Promedio de estrellas del chofer (1.0 a 5.0). */
+  ratingAverage?: number;
+  /** Cantidad de calificaciones recibidas. */
+  ratingCount?: number;
   /** Estado de la cuenta (lo modifica solo el administrador). */
   status?: AccountStatus;
   /** Motivo de rechazo o suspensión, visible para la administración. */
@@ -61,6 +82,10 @@ export interface Trip {
   driverRating?: number;
   origin: string;
   destination: string;
+  /** Punto de encuentro seguro de salida (ej. Plaza Venezuela) */
+  meetingPointOrigin?: string;
+  /** Punto de desembarque seguro de llegada (ej. Distribuidor San Blas) */
+  meetingPointDestination?: string;
   /** Fecha/hora de salida en ISO 8601 */
   departureTime: string;
   totalSeats: number;
@@ -141,4 +166,26 @@ export interface Report {
   adminNote?: string;
   createdAt: string;
   updatedAt?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Calificaciones y Reseñas de Conductores
+// ---------------------------------------------------------------------------
+
+export interface Review {
+  id: string;
+  tripId: string;
+  driverId: string;
+  driverName: string;
+  passengerId: string;
+  passengerName: string;
+  /** Puntuación de 1 a 5 estrellas */
+  rating: number;
+  /** Comentario sobre el viaje */
+  comment?: string;
+  /** Etiquetas destacadas: 'Puntual', 'Buen aire acondicionado', 'Vehículo impecable', etc. */
+  tags?: string[];
+  /** Moderación de la reseña: 'approved' o 'hidden' */
+  status?: 'approved' | 'hidden';
+  createdAt: string;
 }

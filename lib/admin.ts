@@ -22,6 +22,8 @@ import type {
   ReportStatus,
   Trip,
   User,
+  Review,
+  DriverDocuments,
 } from './types';
 
 /** Cuota mensual sugerida de la suscripción de choferes (USD). */
@@ -290,3 +292,41 @@ export function paymentsToCsv(payments: Payment[]): string {
   return '\uFEFF' + [header.map(esc).join(';'), ...rows].join('\n');
 }
 
+
+export function listenReviews(onData: (reviews: Review[]) => void, onError?: (e: Error) => void) {
+  return listenCollection<Review>(COLLECTIONS.reviews, (r) => onData(r.sort(byCreatedDesc)), onError);
+}
+
+/** Moderar visibilidad de una reseña */
+export async function setReviewStatus(
+  reviewId: string,
+  status: 'approved' | 'hidden'
+): Promise<void> {
+  await updateDoc(doc(getDb(), COLLECTIONS.reviews, reviewId), { status });
+}
+
+/** Exonerar y premiar a un chofer destacado con 1 mes gratis de membresía */
+export async function rewardDriverFreeMonth(driverId: string, adminEmail: string): Promise<Payment> {
+  return recordPayment({
+    driverId,
+    amount: 0,
+    method: 'efectivo',
+    reference: `BONO-PREMIO-${Date.now().toString().slice(-6)}`,
+    months: 1,
+    notes: 'Exoneración mensual por excelente calificación y desempeño del chofer.',
+    recordedBy: adminEmail,
+  });
+}
+
+/** Guardar documentos y recaudos de un chofer */
+export async function updateDriverDocuments(
+  driverId: string,
+  documents: DriverDocuments
+): Promise<void> {
+  await updateDoc(doc(getDb(), COLLECTIONS.users, driverId), {
+    documents: {
+      ...documents,
+      uploadedAt: new Date().toISOString(),
+    },
+  });
+}

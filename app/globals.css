@@ -78,12 +78,14 @@ html, body {
   color: #F9FAFB;
   min-height: 100%;
   overscroll-behavior-y: none;
+  -webkit-overflow-scrolling: touch;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  text-rendering: optimizeLegibility;
 }
 
 /* Safe area padding utilities for mobile notches & bottom home indicators */
 .pb-safe {
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 5rem);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 5.5rem);
 }
 
 .pt-safe {
@@ -91,13 +93,40 @@ html, body {
 }
 
 .bottom-bar-safe {
-  padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.5rem);
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.6rem);
 }
 
-/* Custom scrollbar for mobile clean look */
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar,
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Mobile glass card & cockpit glow */
+.cockpit-glass {
+  background: linear-gradient(180deg, rgba(24, 32, 47, 0.85) 0%, rgba(11, 15, 23, 0.95) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cockpit-glow-amber {
+  box-shadow: 0 0 20px -5px rgba(245, 158, 11, 0.25);
+}
+
+.cockpit-glow-emerald {
+  box-shadow: 0 0 20px -5px rgba(16, 185, 129, 0.25);
+}
+
+/* Custom scrollbar for desktop */
 ::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -106,5 +135,5 @@ html, body {
 
 ::-webkit-scrollbar-thumb {
   background: #273549;
-  border-radius: 4px;
+  border-radius: 9999px;
 }

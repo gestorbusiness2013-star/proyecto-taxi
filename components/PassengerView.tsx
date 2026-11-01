@@ -21,10 +21,16 @@ import {
   ChevronDown,
   ArrowUpDown,
   Navigation,
+  Star,
+  Coins,
+  Shield,
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import type { Trip, Booking } from '@/lib/types';
 import { getLiveTrips, bookSeats } from '@/lib/db';
+import { listenBcvRate, DEFAULT_BCV_RATE, formatBs } from '@/lib/bcv';
+import { getMeetingPointsForCity } from '@/lib/meetingPoints';
+import { buildWhatsAppLink, WhatsAppTemplates } from '@/lib/whatsapp';
 
 // Leaflet depende de `window`: se carga solo en el cliente (sin SSR)
 const LiveRouteMap = dynamic(() => import('@/components/LiveRouteMap'), {
@@ -79,12 +85,21 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
   const [passengerPhone, setPassengerPhone] = useState('+584141234567');
   const [isBookingLoading, setIsBookingLoading] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
+  const [bcvRate, setBcvRate] = useState<number>(DEFAULT_BCV_RATE);
 
   // Success Ticket Modal state
   const [confirmedBooking, setConfirmedBooking] = useState<{
     booking: Booking;
     trip: Trip;
   } | null>(null);
+
+  // Subscribe to real-time BCV exchange rate
+  useEffect(() => {
+    const unsubBcv = listenBcvRate((rate) => {
+      setBcvRate(rate.rate);
+    });
+    return () => unsubBcv();
+  }, []);
 
   // Subscribe to real-time scheduled trips
   useEffect(() => {
@@ -481,95 +496,113 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
               minute: '2-digit',
             });
             const carModel = trip.vehicleModel || 'Sedán Confort';
-            const priceBcv = trip.pricePerSeat * 85;
+            const priceBcv = trip.pricePerSeat * bcvRate;
+            const originMeetingPoint = getMeetingPointsForCity(trip.origin)[0];
+            const destMeetingPoint = getMeetingPointsForCity(trip.destination)[0];
 
             return (
               <article
                 key={trip.id}
                 onClick={() => handleOpenBooking(trip)}
-                className={`group relative overflow-hidden rounded-2xl border p-4 shadow-xl transition-all duration-200 cursor-pointer active:scale-[0.99] ${
+                className={`group relative overflow-hidden rounded-2xl border p-3.5 sm:p-4 shadow-xl transition-all duration-200 cursor-pointer active:scale-[0.98] ${
                   isEnRuta
-                    ? 'border-white/20 hover:border-emerald-400/60 bg-gradient-to-b from-zinc-900/95 via-zinc-900 to-emerald-950/20 ring-1 ring-emerald-500/20 shadow-emerald-950/20'
-                    : 'border-white/20 hover:border-white/40 bg-gradient-to-b from-zinc-900/95 via-zinc-900 to-[#101725] shadow-black/50'
+                    ? 'border-emerald-500/40 hover:border-emerald-400/80 bg-gradient-to-b from-zinc-900/95 via-zinc-900 to-emerald-950/30 ring-1 ring-emerald-500/30 shadow-emerald-950/30'
+                    : 'border-white/10 hover:border-amber-400/40 bg-gradient-to-b from-zinc-900/95 via-zinc-900 to-[#101725] shadow-black/50'
                 }`}
               >
                 {/* Header: Hora / Badge En Ruta & Tarifa por Puesto */}
-                <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
                   {/* Hora de salida o Badge animado en verde si está 'EN RUTA' */}
                   <div>
                     {isEnRuta ? (
-                      <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/15 px-3 py-1 text-xs font-black text-emerald-400">
+                      <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/15 px-2.5 py-1 text-[11px] font-black text-emerald-400">
                         <span className="relative flex h-2 w-2">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                           <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                         </span>
-                        <span className="tracking-wider">EN RUTA</span>
+                        <span className="tracking-wider">EN RUTA GPS</span>
                       </div>
                     ) : (
-                      <div className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-zinc-950/70 px-2.5 py-1 text-xs font-bold text-amber-400">
-                        <Clock className="h-3.5 w-3.5" />
+                      <div className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-300">
+                        <Clock className="h-3.5 w-3.5 text-amber-400" />
                         <span>Salida: {timeString}</span>
                       </div>
                     )}
                   </div>
 
-                  {/* Tarifa por puesto */}
-                  <div className="text-right">
-                    <span className="text-lg font-black text-white">
-                      ${trip.pricePerSeat}
-                    </span>
-                    <span className="text-[11px] text-zinc-400 font-medium ml-1">
-                      USD / puesto
-                    </span>
-                    <div className="text-[10px] text-zinc-400 font-mono">
-                      Ref. Bs. {priceBcv.toLocaleString('es-VE')}
+                  {/* Tarifa por puesto dual ($ y Bs) */}
+                  <div className="text-right leading-tight">
+                    <div>
+                      <span className="text-lg font-black text-white">
+                        ${trip.pricePerSeat}
+                      </span>
+                      <span className="text-[10px] text-zinc-400 font-medium ml-1">
+                        USD
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-amber-400/90 font-mono font-medium">
+                      Bs. {formatBs(priceBcv)}
                     </div>
                   </div>
                 </div>
 
                 {/* Origen y Destino Destacados en bloque con borde blanco sutil */}
-                <div className="my-3 rounded-xl border border-white/10 bg-zinc-950/60 p-3">
+                <div className="my-2.5 rounded-xl border border-white/10 bg-zinc-950/70 p-3">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
                       <span className="flex h-3 w-3 rounded-full bg-emerald-400 ring-4 ring-emerald-500/20 shrink-0" />
-                      <div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 block">Origen</span>
-                        <span className="text-sm font-extrabold text-white tracking-wide">
+                      <div className="min-w-0">
+                        <span className="text-[9px] font-black uppercase tracking-wider text-emerald-400 block">Origen</span>
+                        <span className="text-sm font-extrabold text-white tracking-wide truncate block">
                           {trip.origin}
                         </span>
                       </div>
                     </div>
-                    <ArrowRight className="h-4 w-4 text-zinc-400 shrink-0 mx-2" />
-                    <div className="flex items-center gap-2 text-right">
-                      <div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 block">Destino</span>
-                        <span className="text-sm font-extrabold text-white tracking-wide">
+                    <ArrowRight className="h-4 w-4 text-zinc-500 shrink-0 mx-2" />
+                    <div className="flex items-center gap-2 text-right min-w-0">
+                      <div className="min-w-0">
+                        <span className="text-[9px] font-black uppercase tracking-wider text-amber-400 block">Destino</span>
+                        <span className="text-sm font-extrabold text-white tracking-wide truncate block">
                           {trip.destination}
                         </span>
                       </div>
                       <span className="flex h-3 w-3 rounded-full bg-amber-400 ring-4 ring-amber-500/20 shrink-0" />
                     </div>
                   </div>
+
+                  {/* Punto seguro recomendado si existe */}
+                  {(originMeetingPoint || destMeetingPoint) && (
+                    <div className="mt-2 pt-2 border-t border-white/5 flex items-center gap-1.5 text-[10px] text-zinc-400 truncate">
+                      <MapPin className="h-3 w-3 text-amber-400 shrink-0" />
+                      <span className="truncate">
+                        Punto seguro: {originMeetingPoint?.name ?? trip.origin}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Nombre del conductor y modelo del carro con borde blanco sutil */}
                 <div className="rounded-xl border border-white/10 bg-zinc-950/60 p-2.5 flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 text-amber-400 font-bold text-xs border border-white/15">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-amber-400 font-bold text-xs border border-white/15">
                       {trip.driverName.charAt(0)}
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold text-zinc-200">
+                        <span className="text-xs font-bold text-zinc-200 truncate">
                           {trip.driverName}
                         </span>
-                        <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+                        <ShieldCheck className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                        <span className="flex items-center gap-0.5 text-[10px] font-bold text-amber-400">
+                          <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />
+                          <span>4.9</span>
+                        </span>
                       </div>
-                      <p className="text-[11px] text-zinc-400 flex items-center gap-1 mt-0.5">
-                        <Car className="h-3 w-3 text-amber-400" />
-                        <span>{carModel}</span>
+                      <p className="text-[11px] text-zinc-400 flex items-center gap-1 mt-0.5 truncate">
+                        <Car className="h-3 w-3 text-amber-400 shrink-0" />
+                        <span className="truncate">{carModel}</span>
                         <span className="text-zinc-600">•</span>
-                        <span className="font-mono text-zinc-300">Placa {trip.vehiclePlate}</span>
+                        <span className="font-mono text-zinc-300 text-[10px] shrink-0">Placa {trip.vehiclePlate}</span>
                       </p>
                     </div>
                   </div>
@@ -583,22 +616,22 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
                       className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-black ${
                         trip.availableSeats === 1
                           ? 'border border-red-500/40 bg-red-950/40 text-red-400 animate-pulse'
-                          : 'border border-white/15 bg-amber-500/10 text-amber-400'
+                          : 'border border-white/15 bg-amber-500/10 text-amber-300'
                       }`}
                     >
                       <Users className="h-3.5 w-3.5" />
                       <span>
                         {trip.availableSeats === 1
                           ? '¡Último puesto!'
-                          : `Quedan ${trip.availableSeats} puestos`}
+                          : `${trip.availableSeats} disponibles`}
                       </span>
                     </span>
-                    <span className="text-[11px] text-zinc-400">
+                    <span className="text-[11px] text-zinc-400 hidden xs:inline">
                       (de {trip.totalSeats})
                     </span>
                   </div>
 
-                  {/* Botón de acción */}
+                  {/* Botón de acción touch-friendly */}
                   <span className="flex items-center gap-1 rounded-xl bg-amber-500 px-3.5 py-1.5 text-xs font-bold text-zinc-950 shadow-md shadow-amber-500/20 group-hover:bg-amber-400 transition">
                     <span>Reservar</span>
                     <ArrowRight className="h-3.5 w-3.5" />
@@ -716,8 +749,8 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
                   <span className="text-base font-black text-amber-400">
                     ${selectedTrip.pricePerSeat * seatsToBook} USD
                   </span>
-                  <div className="text-[10px] text-zinc-400">
-                    Ref. Bs. {(selectedTrip.pricePerSeat * seatsToBook * 85).toLocaleString('es-VE')}
+                  <div className="text-[10px] text-amber-300/80 font-mono">
+                    Ref. Bs. {formatBs(selectedTrip.pricePerSeat * seatsToBook * bcvRate)}
                   </div>
                 </div>
               </div>
@@ -728,7 +761,7 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
                   type="button"
                   onClick={() => setSelectedTrip(null)}
                   disabled={isBookingLoading}
-                  className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900 py-2.5 text-xs font-semibold text-zinc-300 hover:bg-zinc-800"
+                  className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900 py-3 text-xs font-semibold text-zinc-300 hover:bg-zinc-800 active:scale-95 transition"
                 >
                   Cancelar
                 </button>
@@ -736,7 +769,7 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
                   type="button"
                   onClick={handleConfirmBooking}
                   disabled={isBookingLoading}
-                  className="flex-1 rounded-xl bg-amber-500 py-2.5 text-xs font-bold text-zinc-950 shadow-lg shadow-amber-500/20 hover:bg-amber-400 active:scale-95 transition disabled:opacity-50 flex items-center justify-center gap-1.5"
+                  className="flex-1 rounded-xl bg-amber-500 py-3 text-xs font-bold text-zinc-950 shadow-lg shadow-amber-500/20 hover:bg-amber-400 active:scale-95 transition disabled:opacity-50 flex items-center justify-center gap-1.5"
                 >
                   {isBookingLoading ? (
                     <span>Procesando reserva...</span>
@@ -773,7 +806,7 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
             {/* PIN de abordaje de 4 dígitos en números grandes */}
             <div className="my-5 rounded-2xl border-2 border-amber-500/50 bg-amber-500/10 py-4 px-6 shadow-inner">
               <span className="text-[10px] font-bold uppercase tracking-wider text-amber-300 block mb-1">
-                PIN de Abordaje
+                PIN de Abordaje Seguro
               </span>
               <div className="text-5xl font-black font-mono tracking-widest text-amber-400 drop-shadow-md">
                 {confirmedBooking.booking.boardingPin}
@@ -799,18 +832,27 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
               </div>
               <div className="flex justify-between text-zinc-300">
                 <span className="text-zinc-400">Total a pagar:</span>
-                <span className="text-emerald-400 font-bold">${confirmedBooking.trip.pricePerSeat * confirmedBooking.booking.seatsBooked} USD</span>
+                <span className="text-emerald-400 font-bold">
+                  ${confirmedBooking.trip.pricePerSeat * confirmedBooking.booking.seatsBooked} USD
+                  <span className="text-[10px] text-zinc-400 font-normal ml-1">
+                    (Bs. {formatBs(confirmedBooking.trip.pricePerSeat * confirmedBooking.booking.seatsBooked * bcvRate)})
+                  </span>
+                </span>
               </div>
             </div>
 
-            {/* Botón verde con enlace directo a WhatsApp (wa.me) */}
+            {/* Botón verde con enlace directo a WhatsApp (wa.me) con plantilla oficial */}
             <a
-              href={getWhatsAppLink(
-                confirmedBooking.trip.driverName,
+              href={buildWhatsAppLink(
                 confirmedBooking.trip.driverPhone,
-                confirmedBooking.trip.origin,
-                confirmedBooking.trip.destination,
-                confirmedBooking.booking.boardingPin
+                WhatsAppTemplates.bookingConfirmation(
+                  confirmedBooking.booking.passengerName,
+                  confirmedBooking.trip.origin,
+                  confirmedBooking.trip.destination,
+                  confirmedBooking.booking.boardingPin,
+                  confirmedBooking.trip.driverName,
+                  confirmedBooking.booking.seatsBooked
+                )
               )}
               target="_blank"
               rel="noopener noreferrer"

@@ -15,7 +15,7 @@ import {
   type Firestore,
   type Unsubscribe,
 } from 'firebase/firestore';
-import type { Booking, Trip, TripStatus, User, GeoLocation, Report, ReportType } from './types';
+import type { Booking, Trip, TripStatus, User, GeoLocation, Report, ReportType, Review } from './types';
 
 // ---------------------------------------------------------------------------
 // Inicialización (lazy, para no romper el build si faltan variables de entorno)
@@ -78,6 +78,7 @@ export const COLLECTIONS = {
   payments: 'payments',
   reports: 'reports',
   admins: 'admins',
+  reviews: 'reviews',
 } as const;
 
 /** Los viajes rechazados por moderación no se muestran a los pasajeros. */
@@ -543,3 +544,61 @@ export async function createReport(input: CreateReportInput): Promise<string> {
 }
 
 
+
+// ---------------------------------------------------------------------------
+// 10. Calificaciones y Reseñas
+// ---------------------------------------------------------------------------
+
+export async function createReview(
+  input: Omit<Review, 'id' | 'createdAt' | 'status'>
+): Promise<Review> {
+  const db = getDb();
+  const ref = doc(collection(db, COLLECTIONS.reviews));
+  const review: Review = {
+    ...input,
+    id: ref.id,
+    status: 'approved',
+    createdAt: new Date().toISOString(),
+  };
+
+  await setDoc(ref, review);
+
+  // Actualizar estadísticas del chofer de manera atómica o con merge
+  try {
+    const driverRef = doc(db, COLLECTIONS.users, input.driverId);
+    const snap = await getDoc(driverRef);
+    if (snap.exists()) {
+      const driver = snap.data() as User;
+      const count = (driver.ratingCount || 0) + 1;
+      const currentAvg = driver.ratingAverage || 5.0;
+      const newAvg = Math.round(((currentAvg * (count - 1) + input.rating) / count) * 10) / 10;
+      await updateDoc(driverRef, {
+        ratingAverage: newAvg,
+        ratingCount: count,
+      });
+    }
+  } catch (err) {
+    console.warn('Could not update driver rating summary:', err);
+  }
+
+  return review;
+}
+
+export function listenReviews(
+  onData: (reviews: Review[]) => void,
+  onError?: (error: Error) => void
+): Unsubscribe {
+  return safeListen(() => {
+    const q = collection(getDb(), COLLECTIONS.reviews);
+    return onSnapshot(
+      q,
+      (snap) => {
+        const reviews = snap.docs
+          .map((d) => ({ ...(d.data() as Omit<Review, 'id'>), id: d.id }))
+          .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+        onData(reviews);
+      },
+      (err) => onError?.(err)
+    );
+  }, onError);
+}
