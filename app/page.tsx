@@ -9,40 +9,11 @@ import ProfileTab from '@/components/tabs/ProfileTab';
 import NotificationsModal from '@/components/NotificationsModal';
 import type { Trip, Booking } from '@/lib/types';
 
-const INITIAL_BOOKINGS: BookingWithTrip[] = [
-  {
-    booking: {
-      id: 'booking-initial-1',
-      tripId: 'trip-caracas-valencia-1',
-      passengerId: 'passenger-carlos-1',
-      passengerName: 'Carlos E. Mendoza',
-      passengerPhone: '+584141234567',
-      seatsBooked: 1,
-      boardingPin: '0427',
-      status: 'confirmed',
-      createdAt: new Date().toISOString(),
-    },
-    trip: {
-      id: 'trip-caracas-valencia-1',
-      driverId: 'driver-alejandro-1',
-      driverName: 'Alejandro Bastidas',
-      driverPhone: '+584141234567',
-      vehiclePlate: 'AB123CD',
-      vehicleModel: 'Toyota Corolla 2018',
-      origin: 'Caracas',
-      destination: 'Valencia',
-      departureTime: new Date(Date.now() + 2 * 3600 * 1000).toISOString(),
-      totalSeats: 4,
-      availableSeats: 3,
-      pricePerSeat: 15,
-      status: 'scheduled',
-    },
-  },
-];
+const INITIAL_BOOKINGS: BookingWithTrip[] = [];
 
 export default function Home() {
   const [currentTab, setCurrentTab] = useState<NavTab>('viajes');
-  const [bookings, setBookings] = useState<BookingWithTrip[]>(INITIAL_BOOKINGS);
+  const [bookings, setBookings] = useState<BookingWithTrip[]>([]);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
   const handleBookingCreated = (booking: Booking, trip: Trip) => {

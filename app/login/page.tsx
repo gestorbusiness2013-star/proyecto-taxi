@@ -121,67 +121,12 @@ function LoginForm() {
           </p>
         </div>
 
-        {/* Quick Demo Logins */}
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 space-y-3 shadow-lg">
-          <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
-            <span className="text-xs font-bold text-zinc-300 flex items-center gap-1.5">
-              <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-              <span>Acceso Rápido con 1 Clic</span>
-            </span>
-            <span className="text-[10px] text-zinc-500">Demostración</span>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => handleQuickLogin(DEMO_PASSENGER)}
-            className="w-full flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/80 p-3 hover:border-amber-500/50 hover:bg-zinc-900 transition active:scale-98 text-left"
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-zinc-950 font-black text-sm">
-                CM
-              </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-bold text-white">Carlos E. Mendoza</span>
-                  <span className="rounded bg-emerald-500/15 border border-emerald-500/30 px-1 py-0.2 text-[9px] font-bold text-emerald-400">
-                    Pasajero
-                  </span>
-                </div>
-                <p className="text-[11px] text-zinc-400 font-mono">0414-1234567 • C.I. V-21.432.890</p>
-              </div>
-            </div>
-            <LogIn className="h-4 w-4 text-amber-400" />
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleQuickLogin(DEMO_DRIVER)}
-            className="w-full flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/80 p-3 hover:border-emerald-500/50 hover:bg-zinc-900 transition active:scale-98 text-left"
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-zinc-950 font-black text-sm">
-                AB
-              </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-bold text-white">Alejandro Bastidas</span>
-                  <span className="rounded bg-amber-500/15 border border-amber-500/30 px-1 py-0.2 text-[9px] font-bold text-amber-400">
-                    Conductor
-                  </span>
-                </div>
-                <p className="text-[11px] text-zinc-400 font-mono">Toyota Corolla 2018 • Placa AB123CD</p>
-              </div>
-            </div>
-            <LogIn className="h-4 w-4 text-emerald-400" />
-          </button>
-        </div>
-
         {/* Custom Registration/Login Form */}
-        <div className="rounded-2xl border border-zinc-800 bg-gradient-to-b from-zinc-900 to-zinc-950 p-4 space-y-3.5 shadow-xl">
+        <div className="rounded-2xl border border-zinc-800 bg-gradient-to-b from-zinc-900 to-zinc-950 p-5 space-y-4 shadow-xl">
           <div className="flex items-center gap-2 pb-2 border-b border-zinc-800">
-            <UserCheck className="h-4 w-4 text-amber-400" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-300">
-              O ingresa tus datos
+            <UserCheck className="h-5 w-5 text-amber-400" />
+            <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-200">
+              Ingresa tus datos para continuar
             </h3>
           </div>
 

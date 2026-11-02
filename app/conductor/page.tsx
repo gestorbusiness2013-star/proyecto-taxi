@@ -37,26 +37,13 @@ import {
   getTripBookings,
   updateTripStatus,
   validateBoardingPin,
+  registerUserProfile,
 } from '@/lib/db';
 import { updateDriverDocuments } from '@/lib/admin';
 import { listenBcvRate, DEFAULT_BCV_RATE, formatBs } from '@/lib/bcv';
 import { getMeetingPointsForCity } from '@/lib/meetingPoints';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { useAuth } from '@/lib/auth';
-
-const DRIVER_USER: User = {
-  id: 'driver-alejandro-1',
-  name: 'Alejandro Bastidas',
-  phone: '+584141234567',
-  dni: 'V-18.945.321',
-  role: 'driver',
-  isSubscribed: true,
-  vehicle: {
-    model: 'Toyota Corolla 2018',
-    plate: 'AB123CD',
-    color: 'Plata',
-  },
-};
 
 const COMMON_CITIES = [
   'Puerto Ordaz',
@@ -72,17 +59,42 @@ const COMMON_CITIES = [
 ];
 
 export default function ConductorPage() {
-  const { user: authUser } = useAuth();
-  // 1. Estado del Usuario y Validación de Suscripción
-  const [currentUser, setCurrentUser] = useState<User>(
-    authUser && authUser.role === 'driver' ? authUser : DRIVER_USER
-  );
+  const { user: authUser, login } = useAuth();
+
+  // 1. Estado del Usuario Conductor (Sin choferes demo, lee de localStorage o auth)
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('taxi_driver_profile');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && parsed.role === 'driver') return parsed;
+        }
+      } catch {}
+    }
+    return authUser && authUser.role === 'driver' ? authUser : null;
+  });
+
+  // Estados del Formulario de Inscripción de Chofer
+  const [regName, setRegName] = useState('');
+  const [regPhone, setRegPhone] = useState('');
+  const [regDni, setRegDni] = useState('');
+  const [regCity, setRegCity] = useState('Caracas');
+  const [regCarBrand, setRegCarBrand] = useState('Toyota');
+  const [regCarModel, setRegCarModel] = useState('');
+  const [regCarYear, setRegCarYear] = useState('2018');
+  const [regCarColor, setRegCarColor] = useState('Blanco');
+  const [regPlate, setRegPlate] = useState('');
+  const [regSeats, setRegSeats] = useState(4);
+  const [regHasAC, setRegHasAC] = useState(true);
+  const [regSubmitting, setRegSubmitting] = useState(false);
+  const [regError, setRegError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (authUser && authUser.role === 'driver') {
+    if (authUser && authUser.role === 'driver' && !currentUser) {
       setCurrentUser(authUser);
     }
-  }, [authUser]);
+  }, [authUser, currentUser]);
 
   // Lista de viajes del chofer en tiempo real
   const [driverTrips, setDriverTrips] = useState<Trip[]>([]);
@@ -105,15 +117,20 @@ export default function ConductorPage() {
   const [bcvRate, setBcvRate] = useState<number>(DEFAULT_BCV_RATE);
 
   // Documentos de Conductor (Verificación de Recaudos)
-  const [documents, setDocuments] = useState<DriverDocuments>(
-    currentUser.documents || {
-      idCardUrl: '',
-      driverLicenseUrl: '',
-      vehicleRegistrationUrl: '',
-      vehiclePhotoUrl: '',
-      verified: false,
+  const [documents, setDocuments] = useState<DriverDocuments>({
+    idCardUrl: '',
+    driverLicenseUrl: '',
+    vehicleRegistrationUrl: '',
+    vehiclePhotoUrl: '',
+    verified: false,
+  });
+
+  useEffect(() => {
+    if (currentUser?.documents) {
+      setDocuments(currentUser.documents);
     }
-  );
+  }, [currentUser]);
+
   const [savingDocs, setSavingDocs] = useState(false);
   const [docsMessage, setDocsMessage] = useState<string | null>(null);
 
@@ -140,6 +157,12 @@ export default function ConductorPage() {
 
   // Escuchar viajes del chofer en tiempo real
   useEffect(() => {
+    if (!currentUser) {
+      setDriverTrips([]);
+      setLoadingTrips(false);
+      return;
+    }
+
     const unsub = getDriverTrips(
       currentUser.id,
       (trips) => {
@@ -158,7 +181,53 @@ export default function ConductorPage() {
     );
 
     return () => unsub();
-  }, [currentUser.id, selectedTripId]);
+  }, [currentUser?.id, selectedTripId]);
+
+  // Handler para registrar e inscribir al chofer
+  const handleRegisterDriver = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!regName.trim() || !regPhone.trim() || !regDni.trim() || !regCarModel.trim() || !regPlate.trim()) {
+      setRegError('Por favor completa todos los campos requeridos (*).');
+      return;
+    }
+
+    setRegSubmitting(true);
+    setRegError(null);
+
+    let cleanPhone = regPhone.replace(/\D/g, '');
+    if (cleanPhone.startsWith('0')) cleanPhone = '58' + cleanPhone.slice(1);
+    else if (!cleanPhone.startsWith('58')) cleanPhone = '58' + cleanPhone;
+
+    const newDriver: User = {
+      id: `driver-${Date.now()}`,
+      name: regName.trim(),
+      phone: `+${cleanPhone}`,
+      dni: regDni.trim().toUpperCase(),
+      role: 'driver',
+      status: 'pending',
+      isSubscribed: false,
+      vehicle: {
+        model: `${regCarBrand.trim()} ${regCarModel.trim()} ${regCarYear.trim()}`.trim(),
+        plate: regPlate.trim().toUpperCase(),
+        color: regCarColor.trim(),
+      },
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      await registerUserProfile(newDriver);
+    } catch (err) {
+      console.warn('Error syncing driver to Firestore:', err);
+    }
+
+    try {
+      localStorage.setItem('taxi_driver_profile', JSON.stringify(newDriver));
+    } catch {}
+
+    login(newDriver);
+    setCurrentUser(newDriver);
+    setRegSubmitting(false);
+  };
 
   // Escuchar reservas en tiempo real del viaje seleccionado en el monitor
   useEffect(() => {
@@ -212,6 +281,10 @@ export default function ConductorPage() {
       setPublishMessage({ type: 'error', text: 'Selecciona la fecha y hora de salida.' });
       return;
     }
+    if (!currentUser) {
+      setPublishMessage({ type: 'error', text: 'Debes estar registrado como chofer.' });
+      return;
+    }
 
     try {
       setIsPublishing(true);
@@ -247,7 +320,7 @@ export default function ConductorPage() {
 
   // Cambiar estado de viaje (Iniciar Salida / Terminar Viaje)
   const handleChangeStatus = async (nextStatus: TripStatus) => {
-    if (!activeTrip) return;
+    if (!activeTrip || !currentUser) return;
     try {
       setIsUpdatingStatus(true);
       setStatusMessage(null);
@@ -263,7 +336,7 @@ export default function ConductorPage() {
   // Validar PIN de Abordaje ingresado por el chofer
   const handleValidatePin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeTrip) return;
+    if (!activeTrip || !currentUser) return;
 
     if (!/^\d{4}$/.test(pinInput)) {
       setPinResult({ type: 'error', text: 'El PIN debe ser un código de 4 dígitos numéricos.' });
@@ -299,12 +372,12 @@ export default function ConductorPage() {
     } else if (!cleanPhone.startsWith('58')) {
       cleanPhone = '58' + cleanPhone;
     }
-    const msg = `Hola ${passengerName}, soy ${currentUser.name} tu chofer de Taxi Libre Venezuela. Estoy preparando la salida de ${origin} a ${destination}. Por favor ten listo tu PIN de abordaje de 4 dígitos al subir.`;
+    const msg = `Hola ${passengerName}, soy ${currentUser?.name || 'tu conductor'} tu chofer de Taxi Libre Venezuela. Estoy preparando la salida de ${origin} a ${destination}. Por favor ten listo tu PIN de abordaje de 4 dígitos al subir.`;
     return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
   };
 
   const adminWhatsAppLink = `https://wa.me/584141234567?text=${encodeURIComponent(
-    `Hola Administrador de Taxi Libre Venezuela, deseo activar mi suscripción semanal como conductor (${currentUser.name}, C.I. ${currentUser.dni}, Placa: ${currentUser.vehicle?.plate}). Ya realicé el Pago Móvil. Adjunto el comprobante:`
+    `Hola Administrador de Taxi Libre Venezuela, deseo activar mi suscripción semanal como conductor (${currentUser?.name || ''}, C.I. ${currentUser?.dni || ''}, Placa: ${currentUser?.vehicle?.plate || ''}). Ya realicé el Pago Móvil. Adjunto el comprobante:`
   )}`;
 
   return (
@@ -329,71 +402,294 @@ export default function ConductorPage() {
             </span>
           </div>
 
-          {/* Toggle de suscripción para pruebas y demostración */}
-          <button
-            type="button"
-            onClick={() => setCurrentUser({ ...currentUser, isSubscribed: !currentUser.isSubscribed })}
-            className={`rounded-lg px-2 py-1 text-[10px] font-bold border transition ${
-              currentUser.isSubscribed
-                ? 'border-emerald-500/40 bg-emerald-950/40 text-emerald-300'
-                : 'border-red-500/40 bg-red-950/40 text-red-300 animate-pulse'
-            }`}
-            title="Toca para simular suscripción activa/inactiva"
-          >
-            {currentUser.isSubscribed ? 'Suscrito' : 'Sin Pago'}
-          </button>
+          {/* Botón Salir / Cambiar de cuenta si hay chofer activo */}
+          {currentUser && (
+            <button
+              type="button"
+              onClick={() => {
+                localStorage.removeItem('taxi_driver_profile');
+                setCurrentUser(null);
+              }}
+              className="rounded-xl px-2.5 py-1 text-xs font-bold border border-zinc-700 bg-zinc-900 text-zinc-300 hover:text-white transition active:scale-95"
+              title="Cambiar conductor o salir"
+            >
+              Salir
+            </button>
+          )}
         </div>
       </header>
 
       {/* Contenedor Principal Mobile-First */}
       <main className="mx-auto w-full max-w-md flex-1 px-4 pt-3 pb-safe space-y-5">
-        {/* Aviso si la cuenta está pendiente de aprobación por el administrador */}
-        {currentUser.status === 'pending' && (
-          <div className="rounded-2xl border border-amber-500/50 bg-amber-500/10 p-4 text-center space-y-2">
-            <span className="rounded-full bg-amber-500/20 border border-amber-500/40 px-2.5 py-0.5 text-[10px] font-black uppercase text-amber-300">
-              Verificación en Curso
-            </span>
-            <h3 className="text-sm font-bold text-white">Solicitud de Chofer Pendiente</h3>
-            <p className="text-xs text-zinc-300">
-              Tus documentos y vehículo están siendo revisados por la administración. Podrás publicar viajes en cuanto tu cuenta sea aprobada.
-            </p>
-          </div>
-        )}
+        {/* CASO 1: NO HAY CHOFER REGISTRADO -> FORMULARIO DE INSCRIPCIÓN */}
+        {!currentUser ? (
+          <div className="rounded-3xl border border-white/10 bg-gradient-to-b from-zinc-900 to-zinc-950 p-5 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3 pb-3 border-b border-white/10">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/30">
+                <Car className="h-6 w-6" />
+              </div>
+              <div>
+                <h2 className="text-base font-black text-white">Inscripción de Conductor</h2>
+                <p className="text-xs text-zinc-400">Taxi Libre Venezuela · Rutas Interurbanas</p>
+              </div>
+            </div>
 
-        {/* Aviso si la cuenta está suspendida */}
-        {currentUser.status === 'suspended' && (
-          <div className="rounded-2xl border border-red-500/50 bg-red-950/40 p-4 text-center space-y-2">
-            <span className="rounded-full bg-red-500/20 border border-red-500/40 px-2.5 py-0.5 text-[10px] font-black uppercase text-red-300">
-              Cuenta Suspendida
-            </span>
-            <h3 className="text-sm font-bold text-white">Acceso Desactivado</h3>
-            <p className="text-xs text-zinc-300">
-              {currentUser.statusReason || 'Tu cuenta ha sido suspendida temporalmente por la administración.'}
+            <p className="text-xs text-zinc-300 leading-relaxed">
+              Completa tus datos personales y del vehículo para postularte como conductor oficial y comenzar a publicar viajes interurbanos.
             </p>
-          </div>
-        )}
 
-        {/* REQUISITO 1: AVISO BLOQUEANTE SI user.isSubscribed === false */}
-        {!currentUser.isSubscribed && (
-          <div className="relative overflow-hidden rounded-3xl border-2 border-red-500/60 bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 p-6 shadow-2xl text-center space-y-4 animate-in fade-in zoom-in-95 duration-300">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-red-500/20 text-red-400 ring-2 ring-red-500/40 animate-pulse">
-              <ShieldAlert className="h-9 w-9" />
+            {regError && (
+              <div className="rounded-xl border border-red-500/40 bg-red-950/40 p-3 text-xs text-red-300 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 shrink-0 text-red-400" />
+                <span>{regError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleRegisterDriver} className="space-y-4">
+              {/* Sección 1: Datos Personales */}
+              <div className="space-y-3 pt-1">
+                <span className="text-[11px] font-black uppercase tracking-wider text-amber-400 block border-b border-white/5 pb-1">
+                  1. Datos Personales
+                </span>
+
+                <div>
+                  <label className="block text-xs font-bold text-zinc-300 mb-1">
+                    Nombre y Apellido *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={regName}
+                    onChange={(e) => setRegName(e.target.value)}
+                    placeholder="Ej. Roberto González"
+                    className="w-full rounded-xl border border-white/10 bg-zinc-950 px-3.5 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-300 mb-1">
+                      Teléfono WhatsApp *
+                    </label>
+                    <input
+                      type="tel"
+                      required
+                      value={regPhone}
+                      onChange={(e) => setRegPhone(e.target.value)}
+                      placeholder="0414-1234567"
+                      className="w-full rounded-xl border border-white/10 bg-zinc-950 px-3.5 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-300 mb-1">
+                      Cédula de Identidad *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={regDni}
+                      onChange={(e) => setRegDni(e.target.value)}
+                      placeholder="V-18.765.432"
+                      className="w-full rounded-xl border border-white/10 bg-zinc-950 px-3.5 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-zinc-300 mb-1">
+                    Ciudad Base de Operaciones *
+                  </label>
+                  <select
+                    value={regCity}
+                    onChange={(e) => setRegCity(e.target.value)}
+                    className="w-full rounded-xl border border-white/10 bg-zinc-950 px-3.5 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none cursor-pointer font-medium"
+                  >
+                    {COMMON_CITIES.map((c) => (
+                      <option key={c} value={c} className="bg-zinc-950 text-white">
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Sección 2: Datos del Vehículo */}
+              <div className="space-y-3 pt-2">
+                <span className="text-[11px] font-black uppercase tracking-wider text-amber-400 block border-b border-white/5 pb-1">
+                  2. Datos del Vehículo
+                </span>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-300 mb-1">
+                      Marca *
+                    </label>
+                    <select
+                      value={regCarBrand}
+                      onChange={(e) => setRegCarBrand(e.target.value)}
+                      className="w-full rounded-xl border border-white/10 bg-zinc-950 px-3.5 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none cursor-pointer"
+                    >
+                      <option value="Toyota">Toyota</option>
+                      <option value="Chevrolet">Chevrolet</option>
+                      <option value="Ford">Ford</option>
+                      <option value="Hyundai">Hyundai</option>
+                      <option value="Kia">Kia</option>
+                      <option value="Nissan">Nissan</option>
+                      <option value="Renault">Renault</option>
+                      <option value="Chery">Chery</option>
+                      <option value="Mitsubishi">Mitsubishi</option>
+                      <option value="Otro">Otro</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-300 mb-1">
+                      Modelo y Línea *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={regCarModel}
+                      onChange={(e) => setRegCarModel(e.target.value)}
+                      placeholder="Ej. Corolla / Aveo / Optra"
+                      className="w-full rounded-xl border border-white/10 bg-zinc-950 px-3.5 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-300 mb-1">
+                      Año
+                    </label>
+                    <input
+                      type="number"
+                      value={regCarYear}
+                      onChange={(e) => setRegCarYear(e.target.value)}
+                      placeholder="2016"
+                      className="w-full rounded-xl border border-white/10 bg-zinc-950 px-2.5 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-300 mb-1">
+                      Color
+                    </label>
+                    <input
+                      type="text"
+                      value={regCarColor}
+                      onChange={(e) => setRegCarColor(e.target.value)}
+                      placeholder="Plata"
+                      className="w-full rounded-xl border border-white/10 bg-zinc-950 px-2.5 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-300 mb-1">
+                      Placa *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={regPlate}
+                      onChange={(e) => setRegPlate(e.target.value.toUpperCase())}
+                      placeholder="AB123CD"
+                      className="w-full rounded-xl border border-white/10 bg-zinc-950 px-2.5 py-2.5 text-sm font-mono font-bold text-amber-400 focus:border-amber-500 focus:outline-none uppercase"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-300 mb-1">
+                      Puestos de pasajeros
+                    </label>
+                    <select
+                      value={regSeats}
+                      onChange={(e) => setRegSeats(Number(e.target.value))}
+                      className="w-full rounded-xl border border-white/10 bg-zinc-950 px-3.5 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none cursor-pointer"
+                    >
+                      <option value={2}>2 puestos</option>
+                      <option value={3}>3 puestos</option>
+                      <option value={4}>4 puestos (Estándar)</option>
+                      <option value={5}>5 puestos</option>
+                      <option value={6}>6 puestos</option>
+                      <option value={7}>7 puestos</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-300 mb-1">
+                      Aire Acondicionado
+                    </label>
+                    <select
+                      value={regHasAC ? 'si' : 'no'}
+                      onChange={(e) => setRegHasAC(e.target.value === 'si')}
+                      className="w-full rounded-xl border border-white/10 bg-zinc-950 px-3.5 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none cursor-pointer"
+                    >
+                      <option value="si">❄️ Sí, operativo</option>
+                      <option value="no">❌ No tiene / Inactivo</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Botón Enviar */}
+              <button
+                type="submit"
+                disabled={regSubmitting}
+                className="w-full flex items-center justify-center gap-2 rounded-2xl bg-amber-500 hover:bg-amber-400 py-3.5 px-4 text-sm font-black text-zinc-950 shadow-xl shadow-amber-500/20 transition-transform active:scale-95 disabled:opacity-50 mt-4 cursor-pointer"
+              >
+                {regSubmitting ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Car className="h-4 w-4" />
+                )}
+                <span>{regSubmitting ? 'Registrando conductor...' : 'Completar Registro de Chofer'}</span>
+              </button>
+            </form>
+          </div>
+        ) : !currentUser.isSubscribed ? (
+          /* CASO 2: CHOFER REGISTRADO PERO PENDIENTE DE APROBACIÓN O PAGO */
+          <div className="relative overflow-hidden rounded-3xl border border-amber-500/40 bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 p-6 shadow-2xl text-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-400 ring-2 ring-amber-500/30">
+              <Clock className="h-8 w-8 animate-pulse text-amber-400" />
             </div>
 
             <div>
-              <span className="rounded-full bg-red-500/20 border border-red-500/40 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-red-400">
-                Acceso Bloqueado
+              <span className="rounded-full bg-amber-500/20 border border-amber-500/40 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-amber-400">
+                Solicitud en Revisión
               </span>
               <h2 className="text-xl font-black text-white mt-2">
-                Suscripción Semanal Requerida
+                ¡Bienvenido, {currentUser.name}!
               </h2>
               <p className="text-xs text-zinc-400 mt-1 max-w-xs mx-auto">
-                Para publicar rutas interurbanas y validar abordajes de pasajeros en carretera, debes estar al día con tu cuota de servicio.
+                Tus datos como chofer y los de tu vehículo ya están registrados. Para activar la publicación de rutas y validación de PINs, contacta al administrador o activa tu membresía.
               </p>
             </div>
 
-            {/* Datos de Pago Móvil en Venezuela */}
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-950/90 p-4 text-left space-y-2.5 text-xs">
+            {/* Resumen de Datos Registrados */}
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-950/80 p-4 text-left space-y-2 text-xs">
+              <div className="flex justify-between text-zinc-300">
+                <span className="text-zinc-500">Conductor:</span>
+                <span className="font-bold text-white">{currentUser.name}</span>
+              </div>
+              <div className="flex justify-between text-zinc-300">
+                <span className="text-zinc-500">C.I. / RIF:</span>
+                <span className="font-mono text-zinc-200">{currentUser.dni}</span>
+              </div>
+              <div className="flex justify-between text-zinc-300">
+                <span className="text-zinc-500">Vehículo:</span>
+                <span className="font-semibold text-white">{currentUser.vehicle?.model}</span>
+              </div>
+              <div className="flex justify-between text-zinc-300">
+                <span className="text-zinc-500">Placa:</span>
+                <span className="font-mono font-bold text-amber-400">{currentUser.vehicle?.plate}</span>
+              </div>
+              <div className="flex justify-between text-zinc-300">
+                <span className="text-zinc-500">Teléfono:</span>
+                <span className="font-mono text-zinc-300">{currentUser.phone}</span>
+              </div>
+            </div>
+
+            {/* Datos para Pago Móvil */}
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-950/90 p-4 text-left space-y-2 text-xs">
               <div className="flex items-center gap-2 pb-2 border-b border-zinc-800 text-amber-400 font-bold">
                 <CreditCard className="h-4 w-4" />
                 <span>Datos para Pago Móvil (Venezuela)</span>
@@ -412,12 +708,12 @@ export default function ConductorPage() {
               </div>
               <div className="flex justify-between text-zinc-300 pt-1 border-t border-zinc-900">
                 <span className="text-zinc-500">Tarifa Semanal:</span>
-                <span className="font-bold text-emerald-400">$5 USD (Ref. BCV)</span>
+                <span className="font-bold text-emerald-400">$5 USD (Ref. Oficial BCV)</span>
               </div>
             </div>
 
             {/* Botón WhatsApp Administrador */}
-            <div className="space-y-2 pt-1">
+            <div className="space-y-2.5 pt-1">
               <a
                 href={adminWhatsAppLink}
                 target="_blank"
@@ -425,28 +721,40 @@ export default function ConductorPage() {
                 className="w-full flex items-center justify-center gap-2 rounded-2xl bg-[#25D366] hover:bg-[#20bd5a] py-3.5 px-4 text-xs font-black text-zinc-950 shadow-xl shadow-[#25D366]/20 transition-transform active:scale-95"
               >
                 <MessageCircle className="h-4 w-4 fill-zinc-950" />
-                <span>Contactar al Administrador por WhatsApp</span>
+                <span>Enviar Comprobante al Administrador por WhatsApp</span>
               </a>
 
-              <button
-                type="button"
-                onClick={() => setCurrentUser({ ...currentUser, isSubscribed: true })}
-                className="text-[11px] text-zinc-500 hover:text-amber-400 underline pt-1 block mx-auto"
-              >
-                [Simular Pago Aprobado para continuar pruebas]
-              </button>
+              <div className="flex items-center justify-between pt-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentUser(null)}
+                  className="text-xs text-zinc-400 hover:text-white underline"
+                >
+                  Editar mis datos
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const activated = { ...currentUser, isSubscribed: true, status: 'approved' as const };
+                    setCurrentUser(activated);
+                    localStorage.setItem('taxi_driver_profile', JSON.stringify(activated));
+                  }}
+                  className="text-xs font-bold text-amber-400 hover:underline"
+                >
+                  [Activar cuenta de prueba]
+                </button>
+              </div>
             </div>
           </div>
-        )}
-
-        {/* CONTENIDO PARA CHOFER SUSCRITO */}
-        {currentUser.isSubscribed && (
+        ) : (
+          /* CASO 3: CHOFER ACTIVO Y SUSCRITO -> DASHBOARD COMPLETO */
           <>
             {/* Tarjeta de Resumen del Conductor */}
             <div className="rounded-2xl border border-zinc-800 bg-gradient-to-b from-zinc-900 to-zinc-950 p-4 shadow-lg flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500 text-zinc-950 font-black text-base shadow-md shadow-amber-500/20">
-                  AB
+                  {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'C'}
                 </div>
                 <div>
                   <div className="flex items-center gap-1.5">
@@ -1019,6 +1327,7 @@ export default function ConductorPage() {
                   try {
                     setSavingDocs(true);
                     setDocsMessage(null);
+                    if (!currentUser) return;
                     await updateDriverDocuments(currentUser.id, documents);
                     setDocsMessage('¡Recaudos guardados y notificados a administración!');
                   } catch (e: unknown) {
