@@ -149,7 +149,7 @@ export default function AdminDashboard() {
             </div>
             <div className="leading-tight min-w-0">
               <p className="text-xs sm:text-sm font-black tracking-wider text-white truncate">
-                PROYECTO<span className="text-amber-400">TAXI</span>{' '}
+                TAXI LIBRE <span className="text-amber-400">VENEZUELA</span>{' '}
                 <span className="rounded bg-amber-500/15 border border-amber-500/30 px-1 py-0.2 text-[9px] font-black text-amber-400">
                   ADMIN
                 </span>

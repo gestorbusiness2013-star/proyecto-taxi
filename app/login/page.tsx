@@ -88,7 +88,7 @@ function LoginForm() {
 
           <div className="flex items-center gap-2">
             <span className="text-xs font-black tracking-wider text-white">
-              PROYECTO<span className="text-amber-400">TAXI</span>
+              TAXI LIBRE <span className="text-amber-400">VENEZUELA</span>
             </span>
             <span className="rounded bg-amber-500/20 border border-amber-500/40 px-1.5 py-0.2 text-[9px] font-black text-amber-400">
               VE

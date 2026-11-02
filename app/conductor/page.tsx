@@ -299,12 +299,12 @@ export default function ConductorPage() {
     } else if (!cleanPhone.startsWith('58')) {
       cleanPhone = '58' + cleanPhone;
     }
-    const msg = `Hola ${passengerName}, soy ${currentUser.name} tu chofer de Proyecto Taxi. Estoy preparando la salida de ${origin} a ${destination}. Por favor ten listo tu PIN de abordaje de 4 dígitos al subir.`;
+    const msg = `Hola ${passengerName}, soy ${currentUser.name} tu chofer de Taxi Libre Venezuela. Estoy preparando la salida de ${origin} a ${destination}. Por favor ten listo tu PIN de abordaje de 4 dígitos al subir.`;
     return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
   };
 
   const adminWhatsAppLink = `https://wa.me/584141234567?text=${encodeURIComponent(
-    `Hola Administrador de Proyecto Taxi, deseo activar mi suscripción semanal como conductor (${currentUser.name}, C.I. ${currentUser.dni}, Placa: ${currentUser.vehicle?.plate}). Ya realicé el Pago Móvil. Adjunto el comprobante:`
+    `Hola Administrador de Taxi Libre Venezuela, deseo activar mi suscripción semanal como conductor (${currentUser.name}, C.I. ${currentUser.dni}, Placa: ${currentUser.vehicle?.plate}). Ya realicé el Pago Móvil. Adjunto el comprobante:`
   )}`;
 
   return (

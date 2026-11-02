@@ -30,14 +30,11 @@ export default function NavbarTop({ onOpenNotifications }: NavbarTopProps) {
             </div>
             <div className="flex flex-col leading-none">
               <div className="flex items-center gap-1.5">
-                <span className="text-base sm:text-lg font-black tracking-wider text-white">
-                  PROYECTO<span className="text-amber-400">TAXI</span>
-                </span>
-                <span className="rounded bg-amber-500/15 px-1 py-0.5 text-[9px] font-black text-amber-400 border border-amber-500/30">
-                  VE
+                <span className="text-sm sm:text-base font-black tracking-wider text-white whitespace-nowrap">
+                  TAXI LIBRE <span className="text-amber-400">VENEZUELA</span>
                 </span>
               </div>
-              <span className="text-[11px] text-zinc-400 font-medium tracking-tight mt-0.5">
+              <span className="text-[10px] sm:text-[11px] text-zinc-400 font-medium tracking-tight mt-0.5">
                 Rutas Interurbanas
               </span>
             </div>

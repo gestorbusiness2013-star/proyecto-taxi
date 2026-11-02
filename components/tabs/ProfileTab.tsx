@@ -191,7 +191,7 @@ export default function ProfileTab() {
       {/* PWA & App Info */}
       <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-xs space-y-3">
         <div className="flex items-center justify-between">
-          <span className="font-bold text-zinc-300">Proyecto Taxi PWA</span>
+          <span className="font-bold text-zinc-300">Taxi Libre Venezuela PWA</span>
           <span className="rounded bg-amber-500/20 px-2 py-0.5 text-[10px] font-mono font-bold text-amber-400">
             v1.0.0-MVP
           </span>

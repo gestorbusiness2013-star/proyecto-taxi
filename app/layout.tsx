@@ -13,15 +13,15 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'Proyecto Taxi | Viajes Interurbanos Venezuela',
+  title: 'Taxi Libre Venezuela | Viajes Interurbanos',
   description:
     'PWA de viajes compartidos e interurbanos en Venezuela. Rutas seguras, conductores verificados y reserva de asientos entre ciudades.',
-  applicationName: 'Proyecto Taxi',
+  applicationName: 'Taxi Libre Venezuela',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Proyecto Taxi',
+    title: 'Taxi Libre Venezuela',
   },
   formatDetection: {
     telephone: false,
@@ -40,12 +40,12 @@ export const metadata: Metadata = {
     ],
   },
   openGraph: {
-    title: 'Proyecto Taxi - Viajes Interurbanos en Venezuela',
+    title: 'Taxi Libre Venezuela - Viajes Interurbanos',
     description:
       'Viajes compartidos seguros en Venezuela: Caracas, Valencia, Maracay, Barquisimeto y más.',
     type: 'website',
     locale: 'es_VE',
-    siteName: 'Proyecto Taxi',
+    siteName: 'Taxi Libre Venezuela',
   },
 };
 

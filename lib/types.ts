@@ -1,4 +1,4 @@
-// Tipos de dominio de Proyecto Taxi.
+// Tipos de dominio de Taxi Libre Venezuela.
 // Las fechas se guardan como strings ISO 8601 para que se serialicen sin problemas
 // entre Server Components, Client Components y Firestore.
 

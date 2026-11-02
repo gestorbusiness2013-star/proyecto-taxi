@@ -42,7 +42,7 @@ export default function AdminLoginPage() {
             <span>Volver a la app</span>
           </Link>
           <span className="text-xs font-black tracking-wider text-white">
-            PROYECTO<span className="text-amber-400">TAXI</span>
+            TAXI LIBRE <span className="text-amber-400">VENEZUELA</span>
           </span>
         </div>
       </header>

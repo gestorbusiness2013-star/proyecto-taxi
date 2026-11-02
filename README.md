@@ -1,4 +1,4 @@
-# 🚖 Proyecto Taxi (Venezuela)
+# 🚖 Taxi Libre Venezuela
 
 > **PWA Mobile-First** de viajes compartidos e interurbanos en Venezuela. Rutas seguras entre Caracas, Valencia, Maracay, Barquisimeto, Puerto Ordaz y más, con mapa en vivo estilo Flightradar24, trazado vial de la Autopista Regional del Centro (ARC), seguimiento GPS en tiempo real y emisión de boletos con PIN de abordaje seguro.
 

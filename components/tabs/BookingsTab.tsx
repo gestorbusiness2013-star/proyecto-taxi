@@ -58,7 +58,7 @@ export default function BookingsTab({
     const { booking, trip } = item;
     const origin = trip?.origin || 'Caracas';
     const dest = trip?.destination || 'Valencia';
-    const message = `🚕 Hola! Estoy viajando con Proyecto Taxi:
+    const message = `🚕 Hola! Estoy viajando con Taxi Libre Venezuela:
 Ruta: ${origin} ➔ ${dest}
 Asientos reservados: ${booking.seatsBooked}
 PIN de abordaje de 4 dígitos: ${booking.boardingPin}
@@ -66,7 +66,7 @@ Estado: ${booking.status.toUpperCase()}`;
 
     if (navigator.share) {
       navigator.share({
-        title: 'Mi Viaje Seguro - Proyecto Taxi',
+        title: 'Mi Viaje Seguro - Taxi Libre Venezuela',
         text: message,
       }).catch(() => {});
     } else {

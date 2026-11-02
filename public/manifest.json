@@ -1,6 +1,6 @@
 {
-  "name": "Proyecto Taxi - Viajes Interurbanos Venezuela",
-  "short_name": "Proyecto Taxi",
+  "name": "Taxi Libre Venezuela - Rutas Interurbanas",
+  "short_name": "Taxi Libre VE",
   "description": "PWA de viajes compartidos e interurbanos en Venezuela. Rutas seguras entre Caracas, Valencia, Maracay, Barquisimeto y más.",
   "start_url": "/",
   "scope": "/",

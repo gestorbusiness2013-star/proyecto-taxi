@@ -42,3 +42,4 @@ export async function GET() {
     sourceUrl: 'https://www.bcv.org.ve/glosario/cambio-oficial',
   });
 }
+

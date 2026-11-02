@@ -1,5 +1,5 @@
-// Service Worker for Proyecto Taxi PWA
-const CACHE_NAME = 'proyecto-taxi-v1';
+// Service Worker for Taxi Libre Venezuela PWA
+const CACHE_NAME = 'taxi-libre-ve-v2';
 const PRECACHE_ASSETS = [
   '/',
   '/manifest.json',

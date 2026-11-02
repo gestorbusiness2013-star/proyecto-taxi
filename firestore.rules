@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// Reglas de Proyecto Taxi.
+// Reglas de Taxi Libre Venezuela.
 // Integridad de datos:
 //   - Asientos válidos (nunca negativos ni superiores al total).
 //   - Reserva atómica: solo se crea si descuenta exactamente sus asientos del viaje (scheduled o in_route).
