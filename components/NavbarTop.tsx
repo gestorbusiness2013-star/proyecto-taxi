@@ -40,7 +40,7 @@ export default function NavbarTop({ onOpenNotifications }: NavbarTopProps) {
             </div>
           </Link>
 
-          {/* Right Action Icons: BCV Ticker, Chofer shortcut, SOS & Bell */}
+          {/* Right Action Icons: BCV Ticker, SOS & Bell */}
           <div className="flex items-center gap-1.5 sm:gap-2">
             {/* Live BCV Exchange Rate Pill */}
             <div
@@ -50,16 +50,6 @@ export default function NavbarTop({ onOpenNotifications }: NavbarTopProps) {
               <Coins className="h-3.5 w-3.5 text-amber-400 shrink-0" />
               <span>Bs.{bcvRate.toFixed(2)}</span>
             </div>
-
-            {/* Link to Conductor view */}
-            <Link
-              href="/conductor"
-              className="flex h-8 items-center gap-1 rounded-lg border border-white/10 bg-zinc-900/90 px-2.5 text-xs font-bold text-zinc-200 hover:text-amber-400 hover:border-amber-500/40 active:scale-95 transition"
-              title="Panel del chofer"
-            >
-              <Car className="h-3.5 w-3.5 text-amber-400" />
-              <span className="hidden xs:inline">Chofer</span>
-            </Link>
 
             {/* Emergency SOS Button for Highway Safety */}
             <button

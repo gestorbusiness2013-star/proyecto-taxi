@@ -298,148 +298,127 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
   };
 
   return (
-    <div className="space-y-4 pb-24">
-      {/* 1. Selector de vista (View Toggle) en la cabecera: 'Lista' y 'Mapa en vivo' */}
-      <div className="sticky top-14 z-30 -mx-4 px-4 pt-1 pb-2 bg-[#0B0F17]/95 backdrop-blur-md border-b border-zinc-800/80 space-y-2">
-        {/* Conmutador de Vistas: Solo Lista y Mapa en vivo */}
-        <div className="flex w-full rounded-xl border border-white/10 bg-zinc-950 p-1 shadow-md">
-          <button
-            type="button"
-            onClick={() => handleToggleViewMode('list')}
-            className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-2 px-3 text-sm font-black transition ${
-              viewMode === 'list'
-                ? 'bg-amber-500 text-zinc-950 shadow-sm shadow-amber-500/20'
-                : 'text-zinc-400 hover:text-white'
-            }`}
-          >
-            <List className="h-4 w-4" />
-            <span>Lista</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleToggleViewMode('map')}
-            className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-2 px-3 text-sm font-black transition ${
-              viewMode === 'map'
-                ? 'bg-amber-500 text-zinc-950 shadow-sm shadow-amber-500/20'
-                : 'text-zinc-400 hover:text-white'
-            }`}
-          >
-            <Map className="h-4 w-4" />
-            <span>Mapa en vivo</span>
-          </button>
+    <div className="space-y-3 pb-24">
+      {/* 1. Selector de Rol Claro: Pasajero vs Chofer */}
+      <div className="grid grid-cols-2 p-1 rounded-2xl bg-zinc-900/90 border border-white/10 shadow-lg">
+        <div className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-amber-500 text-zinc-950 font-black text-sm shadow-md shadow-amber-500/20">
+          <Users className="h-4 w-4" />
+          <span>Soy Pasajero</span>
         </div>
+        <a
+          href="/conductor"
+          className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-zinc-400 hover:text-white font-bold text-sm transition active:scale-95 hover:bg-zinc-800/60"
+        >
+          <Car className="h-4 w-4 text-amber-400" />
+          <span>Soy Chofer</span>
+        </a>
+      </div>
 
-        {/* 2. Barra de Selectores de Ciudad (Origen y Destino) */}
-        <div className="pt-0.5">
-          <div className="flex items-center gap-2">
-            {/* Selector Origen */}
-            <div className="flex-1 relative">
-              <div className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none flex items-center text-emerald-400">
-                <MapPin className="h-4 w-4" />
-              </div>
+      {/* 2. Barra de Búsqueda de Rutas Compacta y Filtros */}
+      <div className="rounded-2xl border border-white/10 bg-zinc-900/90 p-3 shadow-lg space-y-2.5">
+        {/* Selector Origen y Destino */}
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+          <div>
+            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 block px-0.5 mb-1">
+              Origen
+            </span>
+            <div className="relative">
               <select
                 aria-label="Filtrar por ciudad de origen"
                 value={originCity}
                 onChange={(e) => handleOriginChange(e.target.value)}
-                className="w-full appearance-none rounded-xl border border-white/10 bg-zinc-900/90 py-2 pl-8 pr-6 text-sm font-bold text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/50 shadow-inner cursor-pointer"
+                className="w-full appearance-none rounded-xl border border-white/10 bg-zinc-950 py-2 pl-3 pr-7 text-xs sm:text-sm font-bold text-white focus:border-amber-500 focus:outline-none cursor-pointer"
               >
-                <option value="all">Origen: Todos</option>
+                <option value="all">Todas las ciudades</option>
                 {VENEZUELA_CITIES.map((c) => (
                   <option key={c} value={c} className="bg-zinc-950 text-white font-medium">
                     {c}
                   </option>
                 ))}
               </select>
-              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
             </div>
+          </div>
 
-            {/* Botón Swap / Invertir origen y destino */}
-            <button
-              type="button"
-              onClick={handleSwapCities}
-              title="Invertir origen y destino"
-              className="shrink-0 flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-zinc-900 text-zinc-400 hover:text-amber-400 hover:border-amber-500/40 transition active:scale-95"
-            >
-              <ArrowUpDown className="h-3.5 w-3.5" />
-            </button>
+          <button
+            type="button"
+            onClick={handleSwapCities}
+            title="Invertir ciudades"
+            className="mt-4 flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-zinc-800 text-zinc-300 hover:text-amber-400 transition active:scale-95"
+          >
+            <ArrowUpDown className="h-3.5 w-3.5" />
+          </button>
 
-            {/* Selector Destino */}
-            <div className="flex-1 relative">
-              <div className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none flex items-center text-amber-400">
-                <Navigation className="h-4 w-4" />
-              </div>
+          <div>
+            <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 block px-0.5 mb-1">
+              Destino
+            </span>
+            <div className="relative">
               <select
                 aria-label="Filtrar por ciudad de destino"
                 value={destinationCity}
                 onChange={(e) => handleDestinationChange(e.target.value)}
-                className="w-full appearance-none rounded-xl border border-white/10 bg-zinc-900/90 py-2 pl-8 pr-6 text-sm font-bold text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/50 shadow-inner cursor-pointer"
+                className="w-full appearance-none rounded-xl border border-white/10 bg-zinc-950 py-2 pl-3 pr-7 text-xs sm:text-sm font-bold text-white focus:border-amber-500 focus:outline-none cursor-pointer"
               >
-                <option value="all">Destino: Todos</option>
+                <option value="all">Todas las ciudades</option>
                 {VENEZUELA_CITIES.map((c) => (
                   <option key={c} value={c} className="bg-zinc-950 text-white font-medium">
                     {c}
                   </option>
                 ))}
               </select>
-              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
             </div>
           </div>
         </div>
 
-        {/* Pestañas 'Próximas Salidas' / 'En Carretera' solo en modo Lista */}
-        {viewMode === 'list' && (
-          <div className="flex rounded-2xl border border-white/10 bg-zinc-950 p-1.5 shadow-lg">
-            {/* Tab 1: Próximas Salidas */}
+        {/* Pestañas de Estado + Botón Mapa */}
+        <div className="flex items-center justify-between pt-2 border-t border-zinc-800/80 gap-2">
+          <div className="flex gap-1.5 flex-1">
             <button
               type="button"
-              onClick={() => setActiveTab('scheduled')}
-              className={`flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 px-3 text-sm font-black transition-all ${
-                activeTab === 'scheduled'
-                  ? 'bg-amber-500 text-zinc-950 shadow-md shadow-amber-500/20'
-                  : 'text-zinc-400 hover:text-zinc-200'
+              onClick={() => { setActiveTab('scheduled'); setViewMode('list'); }}
+              className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 ${
+                viewMode === 'list' && activeTab === 'scheduled'
+                  ? 'bg-amber-500 text-zinc-950 shadow-sm shadow-amber-500/20'
+                  : 'bg-zinc-800/80 text-zinc-400 hover:text-white'
               }`}
             >
-              <Clock className="h-4 w-4" />
-              <span>Próximas Salidas</span>
-              <span
-                className={`rounded-full px-2 py-0.5 text-xs font-black ${
-                  activeTab === 'scheduled'
-                    ? 'bg-zinc-950 text-amber-400'
-                    : 'bg-zinc-800 text-zinc-300'
-                }`}
-              >
-                {scheduledTrips.length}
-              </span>
+              <Clock className="h-3.5 w-3.5" />
+              <span>Salidas ({scheduledTrips.length})</span>
             </button>
 
-            {/* Tab 2: En Carretera */}
             <button
               type="button"
-              onClick={() => setActiveTab('in_route')}
-              className={`flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 px-3 text-sm font-black transition-all ${
-                activeTab === 'in_route'
-                  ? 'bg-emerald-500 text-zinc-950 shadow-md shadow-emerald-500/20'
-                  : 'text-zinc-400 hover:text-zinc-200'
+              onClick={() => { setActiveTab('in_route'); setViewMode('list'); }}
+              className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 ${
+                viewMode === 'list' && activeTab === 'in_route'
+                  ? 'bg-emerald-500 text-zinc-950 shadow-sm shadow-emerald-500/20'
+                  : 'bg-zinc-800/80 text-zinc-400 hover:text-white'
               }`}
             >
-              <span className="relative flex h-2.5 w-2.5">
+              <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
               </span>
-              <span>En Carretera</span>
-              <span
-                className={`rounded-full px-2 py-0.5 text-xs font-black ${
-                  activeTab === 'in_route'
-                    ? 'bg-zinc-950 text-emerald-400'
-                    : 'bg-zinc-800 text-zinc-300'
-                }`}
-              >
-                {inRouteTrips.length}
-              </span>
+              <span>En Ruta ({inRouteTrips.length})</span>
             </button>
           </div>
-        )}
+
+          {/* Botón Mapa */}
+          <button
+            type="button"
+            onClick={() => handleToggleViewMode(viewMode === 'map' ? 'list' : 'map')}
+            className={`py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center gap-1 border shrink-0 ${
+              viewMode === 'map'
+                ? 'bg-amber-500 text-zinc-950 border-amber-500 font-black'
+                : 'bg-zinc-800/80 text-zinc-300 border-zinc-700 hover:text-white'
+            }`}
+          >
+            {viewMode === 'map' ? <List className="h-3.5 w-3.5" /> : <Map className="h-3.5 w-3.5 text-amber-400" />}
+            <span>{viewMode === 'map' ? 'Lista' : 'Mapa'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Renderizado condicional según modo de visualización */}
@@ -453,197 +432,151 @@ export default function PassengerView({ onBookingCreated }: PassengerViewProps) 
         />
       ) : (
         <>
-          {/* Sync Status Banner */}
-          <div className="flex items-center justify-between text-[11px] text-zinc-400 px-1">
-            <div className="flex items-center gap-1.5">
-              {isLiveConnected ? (
-                <span className="flex items-center gap-1 text-emerald-400 font-semibold">
-                  <Radio className="h-3 w-3 animate-pulse" />
-                  <span>Red Nacional en Vivo</span>
-                </span>
-              ) : (
-                <span>Conectando con Firestore...</span>
-              )}
-            </div>
-            <span>{displayedTrips.length} viajes con puestos disponibles</span>
+          {/* Contador simple de viajes */}
+          <div className="flex items-center justify-between text-xs text-zinc-400 px-1 pt-1">
+            <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              {activeTab === 'scheduled' ? 'Próximas Salidas Disponibles' : 'Vehículos en Carretera en Vivo'}
+            </span>
+            <span className="font-bold text-zinc-300">{displayedTrips.length} disponibles</span>
           </div>
 
-          {/* 2. Tarjetas de Viaje */}
-          <div className="space-y-3">
+          {/* 3. Tarjetas de Viaje Simplificadas */}
+          <div className="space-y-2.5">
             {isLoading ? (
               <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 text-center text-zinc-400">
                 <RefreshCw className="mx-auto h-6 w-6 animate-spin text-amber-400 mb-2" />
-                <p className="text-xs">Cargando viajes interurbanos...</p>
+                <p className="text-xs">Cargando viajes...</p>
               </div>
             ) : displayedTrips.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-zinc-800 p-8 text-center">
+              <div className="rounded-2xl border border-dashed border-zinc-800 p-8 text-center bg-zinc-900/30">
                 <Car className="mx-auto h-8 w-8 text-zinc-600 mb-2" />
                 <p className="text-sm font-semibold text-zinc-300">
                   {activeTab === 'scheduled'
-                    ? 'No hay salidas programadas en este momento'
-                    : 'No hay vehículos en carretera con puestos vacíos'}
+                    ? 'No hay salidas programadas para esta ruta'
+                    : 'No hay vehículos en carretera en esta ruta'}
                 </p>
                 <p className="text-xs text-zinc-500 mt-1">
-                  Las rutas se actualizan en tiempo real tan pronto un chofer inicia recorrido.
+                  Prueba cambiando la ciudad de origen o destino en el selector arriba.
                 </p>
               </div>
             ) : (
-          displayedTrips.map((trip) => {
-            const isEnRuta = trip.status === 'in_route';
-            const departureDate = new Date(trip.departureTime);
-            const timeString = departureDate.toLocaleTimeString('es-VE', {
-              hour: '2-digit',
-              minute: '2-digit',
-            });
-            const carModel = trip.vehicleModel || 'Sedán Confort';
-            const priceBcv = trip.pricePerSeat * bcvRate;
-            const originMeetingPoint = getMeetingPointsForCity(trip.origin)[0];
-            const destMeetingPoint = getMeetingPointsForCity(trip.destination)[0];
+              displayedTrips.map((trip) => {
+                const isEnRuta = trip.status === 'in_route';
+                const departureDate = new Date(trip.departureTime);
+                const timeString = departureDate.toLocaleTimeString('es-VE', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                });
+                const carModel = trip.vehicleModel || 'Sedán Confort';
+                const priceBcv = trip.pricePerSeat * bcvRate;
 
-            return (
-              <article
-                key={trip.id}
-                onClick={() => handleOpenBooking(trip)}
-                className={`group relative overflow-hidden rounded-2xl border p-3.5 sm:p-4 shadow-xl transition-all duration-200 cursor-pointer active:scale-[0.98] ${
-                  isEnRuta
-                    ? 'border-emerald-500/40 hover:border-emerald-400/80 bg-gradient-to-b from-zinc-900/95 via-zinc-900 to-emerald-950/30 ring-1 ring-emerald-500/30 shadow-emerald-950/30'
-                    : 'border-white/10 hover:border-amber-400/40 bg-gradient-to-b from-zinc-900/95 via-zinc-900 to-[#101725] shadow-black/50'
-                }`}
-              >
-                {/* Header: Hora / Badge En Ruta & Tarifa por Puesto */}
-                <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                  {/* Hora de salida o Badge animado en verde si está 'EN RUTA' */}
-                  <div>
-                    {isEnRuta ? (
-                      <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/15 px-3 py-1.5 text-xs font-black text-emerald-400">
-                        <span className="relative flex h-2.5 w-2.5">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                        </span>
-                        <span className="tracking-wider">EN RUTA GPS</span>
-                      </div>
-                    ) : (
-                      <div className="inline-flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-sm font-black text-amber-300">
-                        <Clock className="h-4 w-4 text-amber-400" />
-                        <span>Salida: {timeString}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Tarifa por puesto dual ($ y Bs) */}
-                  <div className="text-right leading-tight">
-                    <div>
-                      <span className="text-2xl font-black text-white">
-                        ${trip.pricePerSeat}
-                      </span>
-                      <span className="text-xs text-zinc-300 font-bold ml-1">
-                        USD
-                      </span>
-                    </div>
-                    <div className="text-xs font-mono font-bold text-amber-300 mt-0.5">
-                      Ref. Bs. {formatBs(priceBcv)}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Origen y Destino Destacados en bloque con borde blanco sutil */}
-                <div className="my-3 rounded-xl border border-white/10 bg-zinc-950/70 p-3.5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="flex h-3.5 w-3.5 rounded-full bg-emerald-400 ring-4 ring-emerald-500/20 shrink-0" />
+                return (
+                  <article
+                    key={trip.id}
+                    onClick={() => handleOpenBooking(trip)}
+                    className={`group rounded-2xl border p-3.5 sm:p-4 shadow-lg transition-all duration-200 cursor-pointer active:scale-[0.98] ${
+                      isEnRuta
+                        ? 'border-emerald-500/40 bg-gradient-to-b from-zinc-900 via-zinc-900 to-emerald-950/20 ring-1 ring-emerald-500/30'
+                        : 'border-white/10 hover:border-amber-400/40 bg-zinc-900/90'
+                    }`}
+                  >
+                    {/* Fila 1: Ruta y Tarifa */}
+                    <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400 block">Origen</span>
-                        <span className="text-base sm:text-lg font-black text-white tracking-wide truncate block">
-                          {trip.origin}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-base sm:text-lg font-black text-white tracking-wide truncate">
+                            {trip.origin}
+                          </span>
+                          <ArrowRight className="h-4 w-4 text-amber-400 shrink-0" />
+                          <span className="text-base sm:text-lg font-black text-white tracking-wide truncate">
+                            {trip.destination}
+                          </span>
+                        </div>
+
+                        {/* Hora y Puestos libres */}
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          {isEnRuta ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[11px] font-bold text-emerald-400">
+                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                              En carretera
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-xs text-zinc-300 font-medium">
+                              <Clock className="h-3.5 w-3.5 text-amber-400" />
+                              Salida: <strong className="text-white font-bold">{timeString}</strong>
+                            </span>
+                          )}
+                          <span className="text-zinc-600">•</span>
+                          <span className={`text-xs font-bold ${trip.availableSeats === 1 ? 'text-red-400 animate-pulse' : 'text-emerald-400'}`}>
+                            {trip.availableSeats} {trip.availableSeats === 1 ? 'puesto libre' : 'puestos libres'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Tarifa destacada dual */}
+                      <div className="text-right shrink-0">
+                        <div className="text-xl sm:text-2xl font-black text-white leading-none">
+                          ${trip.pricePerSeat} <span className="text-xs text-zinc-400 font-normal">USD</span>
+                        </div>
+                        <div className="text-xs font-mono font-bold text-amber-400 mt-0.5">
+                          Bs. {formatBs(priceBcv)}
+                        </div>
                       </div>
                     </div>
-                    <ArrowRight className="h-4 w-4 text-zinc-400 shrink-0 mx-2" />
-                    <div className="flex items-center gap-2.5 text-right min-w-0">
-                      <div className="min-w-0">
-                        <span className="text-[11px] font-black uppercase tracking-wider text-amber-400 block">Destino</span>
-                        <span className="text-base sm:text-lg font-black text-white tracking-wide truncate block">
-                          {trip.destination}
-                        </span>
+
+                    {/* Fila 2: Conductor y Botón Reservar */}
+                    <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-amber-400 font-black text-xs border border-white/10">
+                          {trip.driverName.charAt(0)}
+                        </div>
+                        <div className="min-w-0 leading-tight">
+                          <div className="flex items-center gap-1.5 text-xs font-bold text-white truncate">
+                            <span className="truncate">{trip.driverName}</span>
+                            <ShieldCheck className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                            <span className="text-[10px] text-amber-400 font-bold shrink-0">★ 4.9</span>
+                          </div>
+                          <p className="text-[11px] text-zinc-400 truncate mt-0.5">
+                            {carModel} • <span className="font-mono text-zinc-300 font-semibold">{trip.vehiclePlate}</span>
+                          </p>
+                        </div>
                       </div>
-                      <span className="flex h-3.5 w-3.5 rounded-full bg-amber-400 ring-4 ring-amber-500/20 shrink-0" />
-                    </div>
-                  </div>
 
-                  {/* Punto seguro recomendado si existe */}
-                  {(originMeetingPoint || destMeetingPoint) && (
-                    <div className="mt-2.5 pt-2.5 border-t border-white/5 flex items-center gap-1.5 text-xs text-zinc-300 font-medium truncate">
-                      <MapPin className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                      <span className="truncate">
-                        Punto seguro: {originMeetingPoint?.name ?? trip.origin}
-                      </span>
+                      <button
+                        type="button"
+                        className="shrink-0 flex items-center gap-1 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 px-3.5 py-1.5 text-xs font-black shadow-md shadow-amber-500/20 transition active:scale-95"
+                      >
+                        <span>Reservar</span>
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
                     </div>
-                  )}
-                </div>
+                  </article>
+                );
+              })
+            )}
+          </div>
 
-                {/* Nombre del conductor y modelo del carro con borde blanco sutil */}
-                <div className="rounded-xl border border-white/10 bg-zinc-950/60 p-3 flex items-center justify-between">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-amber-400 font-black text-sm border border-white/15">
-                      {trip.driverName.charAt(0)}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-bold text-white truncate">
-                          {trip.driverName}
-                        </span>
-                        <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0" />
-                        <span className="flex items-center gap-0.5 text-xs font-bold text-amber-400">
-                          <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                          <span>4.9</span>
-                        </span>
-                      </div>
-                      <p className="text-xs text-zinc-300 flex items-center gap-1.5 mt-0.5 truncate font-medium">
-                        <Car className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                        <span className="truncate">{carModel}</span>
-                        <span className="text-zinc-500">•</span>
-                        <span className="font-mono text-zinc-200 shrink-0 font-bold">Placa {trip.vehiclePlate}</span>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Contador visual de puestos libres & Botón Reservar */}
-                <div className="mt-3.5 flex items-center justify-between pt-3 border-t border-white/10">
-                  {/* Contador visual de puestos libres */}
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-black ${
-                        trip.availableSeats === 1
-                          ? 'border border-red-500/40 bg-red-950/40 text-red-400 animate-pulse'
-                          : 'border border-white/15 bg-amber-500/10 text-amber-300'
-                      }`}
-                    >
-                      <Users className="h-4 w-4" />
-                      <span>
-                        {trip.availableSeats === 1
-                          ? '¡Último puesto!'
-                          : `${trip.availableSeats} disponibles`}
-                      </span>
-                    </span>
-                    <span className="text-xs text-zinc-400 font-medium hidden xs:inline">
-                      (de {trip.totalSeats})
-                    </span>
-                  </div>
-
-                  {/* Botón de acción touch-friendly */}
-                  <span className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2 text-sm font-black text-zinc-950 shadow-md shadow-amber-500/20 group-hover:bg-amber-400 transition">
-                    <span>Reservar</span>
-                    <ArrowRight className="h-4 w-4" />
-                  </span>
-                </div>
-              </article>
-            );
-          })
-        )}
-      </div>
-    </>
-  )}
+          {/* 4. Banner informativo para Choferes */}
+          <div className="mt-4 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-zinc-900 to-zinc-900 p-4 flex items-center justify-between gap-3 shadow-lg">
+            <div className="min-w-0">
+              <p className="text-xs font-black text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Car className="h-4 w-4" />
+                <span>¿Tienes vehículo?</span>
+              </p>
+              <p className="text-xs text-zinc-300 mt-1">
+                Publica tus viajes interurbanos y llena los puestos vacíos en cada salida.
+              </p>
+            </div>
+            <a
+              href="/conductor"
+              className="shrink-0 rounded-xl bg-amber-500 hover:bg-amber-400 px-3.5 py-2 text-xs font-black text-zinc-950 transition active:scale-95 shadow-md shadow-amber-500/20 whitespace-nowrap"
+            >
+              Soy Chofer ➔
+            </a>
+          </div>
+        </>
+      )}
 
       {/* 3. Modal simple con botón 'Reservar Asiento' */}
       {selectedTrip && (

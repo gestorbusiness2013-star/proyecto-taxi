@@ -314,15 +314,15 @@ export default function ConductorPage() {
         <div className="mx-auto flex h-14 max-w-md items-center justify-between px-4">
           <Link
             href="/"
-            className="flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900/80 px-2.5 py-1 text-xs font-semibold text-zinc-300 hover:text-white"
+            className="flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-300 hover:text-white hover:bg-amber-500/20 active:scale-95 transition"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Pasajeros</span>
+            <span>Modo Pasajero</span>
           </Link>
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-black tracking-wider text-white">
-              PANEL<span className="text-amber-400">CHOFER</span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs sm:text-sm font-black tracking-wider text-white">
+              ZONA <span className="text-amber-400">CHOFER</span>
             </span>
             <span className="rounded bg-amber-500/20 border border-amber-500/40 px-1.5 py-0.2 text-[9px] font-black text-amber-400">
               VE
